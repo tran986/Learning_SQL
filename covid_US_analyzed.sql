@@ -141,8 +141,6 @@ ORDER BY cstate;
 -- Which 5 states had the steepest increase in deaths over any 7-day window?
 -- Find states where death data was revised downward (cumulative deaths decreased day over day).
 -- Build a summary table: total deaths, peak single-day deaths, peak hospitalizations, and date of peak for every state.
-
-
 -- Calculate the 7-day rolling average of deathIncrease for California.
 -- Rank all states by total deaths using RANK().
 -- Find the peak hospitalizedCurrently day for each state.
@@ -174,10 +172,45 @@ ORDER BY death_sum_per_day DESC;
 -- Build a pivot table showing total deaths per state per quarter.
 -- Find states where the 7-day average of deaths never exceeded 10.
 -- Identify the top 5 states with the most volatile deathIncrease (highest standard deviation).
+
+SELECT
+state,
+STDDEV_SAMP(deathIncrease) AS avg_death_incre
+FROM abd_results.covid
+GROUP BY state
+ORDER BY avg_death_incre DESC
+LIMIT 5;
+
 -- Write a query that flags potential data errors — negative increases, cumulative drops, or ICU > hospitalized.
+SELECT * 
+FROM abd_results.covid 
+WHERE deathIncrease < 0 OR inIcuCumulative < 0 OR inIcuCumulative > hospitalizedCumulative; 
+
+-- Print out all the colnames:
+DESCRIBE abd_results.covid;
+
 -- What is the average daily deathIncrease per state?
+SELECT 
+state,
+AVG(deathIncrease) as avg_death
+FROM abd_results.covid
+GROUP BY state
+ORDER BY avg_death DESC;
+
 -- Which state had the highest total hospitalizedCumulative?
+SELECT 
+state,
+MAX(hospitalizedCumulative) as max_res
+FROM abd_results.covid
+GROUP BY state
+ORDER BY max_res DESC
+LIMIT 1;
+
 -- What is the total deathIncrease for just the year 2020?
+SELECT
+SUM(deathIncrease)
+FROM abd_results.covid WHERE LEFT(date, 4)='2020'; -- 336783
+
 -- Which month across all years had the most deaths nationwide?
 -- What is the max single-day deathIncrease for each state?
 -- How many days did each state report data?
@@ -185,16 +218,50 @@ ORDER BY death_sum_per_day DESC;
 -- What is the total deaths for Q1 (Jan–Mar) across all years?
 -- Find the average deathIncrease per day of the week (Mon, Tue…).
 -- How many states reported more than 10,000 total deaths?
+CREATE TEMPORARY TABLE high_death_states AS -- add this as beginning assign everything as a var
+SELECT
+state,
+SUM(death) as s_death
+FROM abd_results.covid 
+GROUP BY state
+HAVING s_death > 10000; -- having is like WHERE but use after group by on groups and along with sum, max, min, avg, etc..
+
+SELECT COUNT(*)
+FROM high_death_states; -- then count num of row = number of states
+
+SELECT * FROM high_death_states;
+
 -- Find all days where hospitalizedCurrently dropped by more than 1,000 from the previous day (use self-join or subquery).
 -- Which states had zero deaths recorded for an entire month?
 -- Find records where cumulative death decreased day over day (data corrections).
 -- Show all records from winter months (Dec, Jan, Feb) only.
+SELECT * FROM abd_results.covid;
+
+CREATE TEMPORARY TABLE temp AS
+SELECT *
+FROM abd_results.covid
+WHERE date LIKE '2021-12%'
+   OR date LIKE '2021-01%'
+   OR date LIKE '2021-02%';
+
+SELECT * FROM temp;
+
+-- FROM temp
+-- WHERE date LIKE ""
+
 -- Find states where deathIncrease was above their own average more than 50 times.
 -- Which states reported hospitalization data for every single day in the dataset?
 -- Find the top 5 deadliest days nationwide.
 -- Show all records where inIcuCurrently exceeded hospitalizedCurrently (data anomalies).
 -- Find states that had at least one day with 0 hospitalizations but nonzero deaths.
--- Which states have complete data (no NULLs) across all columns?
 
+-- Which states have complete data (no NULLs) across all columns?
+SELECT state
+FROM abd_results.covid 
+GROUP BY state
+HAVING SUM(deathConfirmed IS NULL) = 0 AND
+       SUM(hospitalized IS NULL) = 0 AND
+       SUM(hospitalizedCumulative IS NULL) = 0 AND
+       SUM(inIcuCumulative IS NULL) = 0;
 
 
