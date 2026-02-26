@@ -145,6 +145,8 @@ ORDER BY cstate;
 -- Rank all states by total deaths using RANK().
 -- Find the peak hospitalizedCurrently day for each state.
 -- Compare total deaths between 2020 and 2021 for each state.
+
+
 -- Which state recovered fastest (biggest drop in hospitalizedCurrently over 30 days)?
 -- Calculate the death rate as SUM(deathIncrease) / COUNT(date) per state.
 
@@ -168,6 +170,7 @@ ORDER BY death_sum_per_day DESC;
 -- Using a window function, show each state's cumulative deaths over time.
 -- Calculate week-over-week % change in hospitalizations per state.
 -- Find the correlation between hospitalizedCurrently and deathIncrease by state.
+
 -- Using LEAD() or LAG(), find the day-over-day change in death for each state.
 -- Build a pivot table showing total deaths per state per quarter.
 -- Find states where the 7-day average of deaths never exceeded 10.
@@ -215,6 +218,12 @@ FROM abd_results.covid WHERE LEFT(date, 4)='2020'; -- 336783
 -- What is the max single-day deathIncrease for each state?
 -- How many days did each state report data?
 -- Which state had the lowest average hospitalizedCurrently?
+SELECT state,
+AVG(hospitalizedCurrently) as mu_hos
+FROM abd_results.covid 
+GROUP BY state
+ORDER BY mu_hos ASC;
+
 -- What is the total deaths for Q1 (Jan–Mar) across all years?
 -- Find the average deathIncrease per day of the week (Mon, Tue…).
 -- How many states reported more than 10,000 total deaths?
@@ -252,8 +261,28 @@ SELECT * FROM temp;
 -- Find states where deathIncrease was above their own average more than 50 times.
 -- Which states reported hospitalization data for every single day in the dataset?
 -- Find the top 5 deadliest days nationwide.
+SELECT date, MAX(death) AS max_death
+FROM abd_results.covid
+GROUP BY date
+ORDER BY max_death DESC
+LIMIT 5;
+
 -- Show all records where inIcuCurrently exceeded hospitalizedCurrently (data anomalies).
+SELECT hospitalizedCurrently, inIcuCurrently
+FROM abd_results.covid
+WHERE hospitalizedCurrently > inIcuCurrently;
+
+-- Show all state where inIcuCurrently exceeded hospitalizedCurrently (data anomalies)
+SELECT state,
+hospitalizedCurrently,
+inIcuCurrently
+FROM abd_results.covid WHERE hospitalizedCurrently > inIcuCurrently;
+
 -- Find states that had at least one day with 0 hospitalizations but nonzero deaths.
+SELECT state, hospitalized, deathConfirmed
+FROM abd_results.covid 
+WHERE hospitalized = 0 AND
+      deathConfirmed > 0;
 
 -- Which states have complete data (no NULLs) across all columns?
 SELECT state
@@ -263,5 +292,43 @@ HAVING SUM(deathConfirmed IS NULL) = 0 AND
        SUM(hospitalized IS NULL) = 0 AND
        SUM(hospitalizedCumulative IS NULL) = 0 AND
        SUM(inIcuCumulative IS NULL) = 0;
+       
+-- states               -- state info
+-- state | region | population
+
+-- daily_stats          -- daily covid numbers
+-- date | state | deathIncrease | positiveIncrease | hospitalizedCurrently
+
+-- hospital_data        -- hospitalization details
+-- date | state | hospitalized | inIcuCurrently | onVentilatorCurrently
+
+
+-- INNER JOIN
+-- 1. Show daily stats only for states that have hospital data on the same date.
+-- 2. Find days where both daily_stats and hospital_data reported data for CA.
+-- 3. Show state region alongside their total deaths.
+-- 4. Which states in the South region had the highest positiveIncrease?
+-- 5. Join daily_stats and hospital_data — show dates where ICU was above 500.
+
+-- LEFT JOIN
+-- 6. Show all states from daily_stats and their hospital data — include states even if hospital data is missing.
+-- 7. Find states that have daily stats but NO hospital data at all.
+-- 8. Show all dates for TX with hospital data if it exists, NULL if not.
+-- 9. Which states have population data but never reported ICU numbers?
+-- 10. Show all daily stats with region info — keep rows even if region is unknown.
+
+-- RIGHT JOIN
+-- 11. Show all hospital records and match daily stats where available.
+-- 12. Find dates that exist in hospital_data but not in daily_stats.
+-- 13. Show all states from the states table even if they never reported deaths.
+-- 14. Which states have population data but zero daily stats records?
+-- 15. Show all ICU data with matching death data — keep ICU rows even without death data.
+
+-- SELF JOIN
+-- 16. Find dates where CA had higher positiveIncrease than NY on the same day.
+-- 17. Find all states that had more deaths than CA on any given day.
+-- 18. Compare each state's hospitalizedCurrently to the national average on the same date.
+-- 19. Find days where a state's deathIncrease was higher than the previous day.
+-- 20. Which states always had fewer ICU patients than their total hospitalized on every single day?
 
 
