@@ -128,6 +128,36 @@ SELECT sum(positiveIncrease)
 FROM abd_results.covid; -- 28751117
 
 -- 20. Find the day each state hit its all-time highest hospitalizedCurrently.
+-- step 1: find peak values of hospitalizedCurrrently per state:
+CREATE TEMPORARY TABLE peak_hos_df AS 
+SELECT state,
+MAX(hospitalizedCurrently) AS max_hos
+FROM abd_results.covid
+GROUP BY state
+ORDER BY max_hos DESC;
+
+-- step 2: merged into the date of those peak:
+SELECT * FROM peak_hos_df;
+SELECT abd_results.covid.state,
+abd_results.covid.date
+FROM abd_results.covid
+INNER JOIN peak_hos_df
+ON abd_results.covid.state = peak_hos_df.state
+AND abd_results.covid.hospitalizedCurrently = peak_hos_df.max_hos;
+
+-- OR a way to combine step 1 and step 2 into a big aggregated query - to wrap step 1 inside INNER JOIN of step 2:
+SELECT c.state, c.date,
+c.hospitalizedCurrently -- c is alias of abd_results.covid
+FROM abd_results.covid c
+INNER JOIN ( -- creating peak_hos_df step goes in here
+  SELECT state, 
+  MAX(hospitalizedCurrently) AS max_hos
+  FROM abd_results.covid
+  GROUP BY state 
+) AS peak
+ON c.state = peak.state
+AND c.hospitalizedCurrently = peak.max_hos
+ORDER BY peak.max_hos DESC;
 
 -- 21. How many records does each state have?
 SELECT 
