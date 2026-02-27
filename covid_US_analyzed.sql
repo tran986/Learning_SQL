@@ -315,6 +315,122 @@ inIcuCurrently,
 onVentilatorCurrently
 FROM abd_results.covid;
 
+-- df 3: population-based:
+CREATE TABLE population (
+state VARCHAR(5) PRIMARY KEY,
+region VARCHAR(50)
+);
+
+INSERT INTO population VALUES
+('CA', 'West'), ('NY', 'Northeast'), ('TX', 'South'),
+('FL', 'South'), ('OH', 'Midwest'), ('IL', 'Midwest'),
+('PA', 'Northeast'), ('GA', 'South'), ('NC', 'South'),
+('MI', 'Midwest'), ('AZ', 'West'), ('WA', 'West'),
+('MA', 'Northeast'), ('NJ', 'Northeast'), ('TN', 'South'),
+('MN', 'Midwest'), ('CO', 'West'), ('AL', 'South'),
+('LA', 'South'), ('OR', 'West');
+
+DESCRIBE population;
+SELECT * FROM population;
+
+-- INNER JOIN
+-- 1. Show daily stats only for states that have hospital data on the same date
+SELECT * FROM hospital_data;
+SELECT * FROM daily_stats;
+
+SELECT hospital_data.date, hospital_data.state
+FROM hospital_data
+INNER JOIN daily_stats
+ON hospital_data.date = daily_stats.date
+AND hospital_data.state = daily_stats.state;
+
+-- 2. Find days where both daily_stats and hospital_data reported data for CA.
+SELECT hospital_data.date, hospital_data.state
+FROM hospital_data
+INNER JOIN daily_stats
+ON hospital_data.date = daily_stats.date
+WHERE hospital_data.state = "CA";
+
+-- 3. Show state region alongside their total deaths.
+SELECT 
+abd_results.covid.death,
+abd_results.covid.state
+FROM abd_results.covid
+INNER JOIN population
+ON abd_results.covid.state = population.state;
+
+-- 4. Which states in the South region had the highest positiveIncrease?
+SELECT 
+population.state
+FROM population
+INNER JOIN daily_stats
+ON population.state = daily_stats.state
+WHERE population.region = 'South'
+ORDER BY daily_stats.positiveIncrease DESC;
+
+SELECT p.state, -- p = population --> select state in population
+SUM(d.positiveIncrease) AS pos_inc -- d = daily_stats 
+FROM population p        -- define p here
+INNER JOIN daily_stats d -- define d here 
+ON p.state = d.state
+WHERE p.region = 'South'
+GROUP BY p.state
+ORDER BY pos_inc DESC;
+
+-- 5. Join daily_stats and hospital_data — show dates where ICU was above 500.
+SELECT * FROM daily_stats;
+SELECT * FROM hospital_data; -- icu is here
+
+SELECT d.date, -- d = daily_stats
+SUM(h.inIcuCurrently) AS icu_sum -- h = hospital_data
+FROM daily_stats d
+INNER JOIN hospital_data h
+ON d.date = h.date
+GROUP BY d.date
+HAVING icu_sum > 500;
+
+SELECT daily_stats.date
+FROM daily_stats
+INNER JOIN hospital_data
+ON daily_stats.date = hospital_data.date
+WHERE inIcuCurrently > 500;
+
+-- 1. Show total deathIncrease for each region (not state).
+--    Hint: JOIN states + daily_stats, GROUP BY region
+
+-- 2. Find all dates where Southern states had more than 1000 positiveIncrease.
+--    Hint: JOIN states + daily_stats, WHERE region + HAVING or WHERE positiveIncrease
+
+-- 3. Show the peak inIcuCurrently for each state along with its region.
+--    Hint: JOIN states + hospital_data, MAX(), GROUP BY state
+
+-- 4. Find dates where both positiveIncrease > 500 AND inIcuCurrently > 100 
+--    for the same state on the same day.
+--    Hint: JOIN daily_stats + hospital_data ON date AND state, WHERE both conditions
+
+-- 5. Which region had the highest average hospitalizedCurrently?
+--    Hint: JOIN states + hospital_data, AVG(), GROUP BY region, ORDER BY DESC
+
+-- LEFT JOIN
+-- 6. Show all states from daily_stats and their hospital data — include states even if hospital data is missing.
+-- 7. Find states that have daily stats but NO hospital data at all.
+-- 8. Show all dates for TX with hospital data if it exists, NULL if not.
+-- 9. Which states have population data but never reported ICU numbers?
+-- 10. Show all daily stats with region info — keep rows even if region is unknown.
+
+-- RIGHT JOIN
+-- 11. Show all hospital records and match daily stats where available.
+-- 12. Find dates that exist in hospital_data but not in daily_stats.
+-- 13. Show all states from the states table even if they never reported deaths.
+-- 14. Which states have population data but zero daily stats records?
+-- 15. Show all ICU data with matching death data — keep ICU rows even without death data.
+
+-- SELF JOIN
+-- 16. Find dates where CA had higher positiveIncrease than NY on the same day.
+-- 17. Find all states that had more deaths than CA on any given day.
+-- 18. Compare each state's hospitalizedCurrently to the national average on the same date.
+-- 19. Find days where a state's deathIncrease was higher than the previous day.
+-- 20. Which states always had fewer ICU patients than their total hospitalized on every single day?
 
 
 
