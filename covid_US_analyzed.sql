@@ -429,6 +429,7 @@ WHERE inIcuCurrently > 500;
 --    Hint: JOIN states + daily_stats, GROUP BY region
 SELECT * FROM daily_stats;
 SELECT * FROM population;
+SELECT * FROM hospital_data;
 
 SELECT SUM(d.deathIncrease) AS sum_death,
 p.region             -- d is alias of daily_stats
@@ -481,10 +482,64 @@ ORDER BY avg_hos;
 
 -- LEFT JOIN
 -- 6. Show all states from daily_stats and their hospital data — include states even if hospital data is missing.
+-- left join daily_stats and hospital_data
+SELECT DISTINCT d.state,
+d.date,
+h.hospitalized,
+h.inIcuCurrently,
+h.onVentilatorCurrently
+FROM daily_stats d
+LEFT JOIN hospital_data h
+ON d.state = h.state
+AND h.state = d.state;
+
 -- 7. Find states that have daily stats but NO hospital data at all.
+SELECT DISTINCT d.state,
+h.date,
+h.hospitalized,
+h.inIcuCurrently,
+h.onVentilatorCurrently
+FROM daily_stats d
+LEFT JOIN hospital_data h
+ON d.state = h.state 
+WHERE h.state IS NULL;
+
 -- 8. Show all dates for TX with hospital data if it exists, NULL if not.
+-- left join daily stats with hospital data
+SELECT d.date,
+d.state,
+h.hospitalized,
+h.inIcuCurrently,
+h.onVentilatorCurrently
+FROM daily_stats d
+LEFT JOIN hospital_data h
+ON d.state = h.state
+AND h.date = d.date
+WHERE d.state = "TX" 
+ORDER BY d.date DESC;
+
 -- 9. Which states have population data but never reported ICU numbers?
+-- left join population with hospital_data (inIcuCurrently IS NULL)
+SELECT * FROM population;
+SELECT DISTINCT p.state,
+p.region,
+h.inIcuCurrently
+FROM population p
+LEFT JOIN hospital_data h
+ON p.state = h.state
+WHERE h.inIcuCurrently IS NULL; 
+
 -- 10. Show all daily stats with region info — keep rows even if region is unknown.
+-- left join daily_stats with population (region + state):
+SELECT d.state,
+d.state,
+d.deathIncrease,
+d.positiveIncrease,
+d.hospitalizedCurrently,
+p.region
+FROM daily_stats d
+LEFT JOIN population p
+ON d.state = p.state;
 
 -- RIGHT JOIN
 -- 11. Show all hospital records and match daily stats where available.
