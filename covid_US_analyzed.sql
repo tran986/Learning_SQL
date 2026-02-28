@@ -427,19 +427,57 @@ WHERE inIcuCurrently > 500;
 
 -- 1. Show total deathIncrease for each region (not state).
 --    Hint: JOIN states + daily_stats, GROUP BY region
+SELECT * FROM daily_stats;
+SELECT * FROM population;
+
+SELECT SUM(d.deathIncrease) AS sum_death,
+p.region             -- d is alias of daily_stats
+FROM daily_stats d
+INNER JOIN population p
+ON d.state = p.state
+GROUP BY p.region
+ORDER BY sum_death;
 
 -- 2. Find all dates where Southern states had more than 1000 positiveIncrease.
---    Hint: JOIN states + daily_stats, WHERE region + HAVING or WHERE positiveIncrease
+SELECT 
+d.date, -- d = daily_stats
+p.state, -- p = population
+d.positiveIncrease 
+FROM daily_stats d
+INNER JOIN population p 
+ON d.state = p.state
+WHERE p.region = "South" AND d.positiveIncrease > 1000;
 
 -- 3. Show the peak inIcuCurrently for each state along with its region.
---    Hint: JOIN states + hospital_data, MAX(), GROUP BY state
+SELECT * FROM hospital_data; -- it does have state
+
+SELECT 
+MAX(h.inIcuCurrently) AS peak_icu, -- h = hospital_data
+p.region                           -- p = population
+FROM hospital_data h
+INNER JOIN population p
+ON h.state = p.state
+GROUP BY p.state
+ORDER BY peak_icu DESC;
+
 
 -- 4. Find dates where both positiveIncrease > 500 AND inIcuCurrently > 100 
---    for the same state on the same day.
---    Hint: JOIN daily_stats + hospital_data ON date AND state, WHERE both conditions
+SELECT d.positiveIncrease, -- d = daily.stats
+d.date,
+h.inIcuCurrently 
+FROM daily_stats d
+INNER JOIN hospital_data h
+WHERE d.positiveIncrease > 500 
+AND h.inIcuCurrently >100;
 
 -- 5. Which region had the highest average hospitalizedCurrently?
---    Hint: JOIN states + hospital_data, AVG(), GROUP BY region, ORDER BY DESC
+SELECT p.region,                       
+AVG(h.hospitalized) AS avg_hos 
+FROM hospital_data h                   
+INNER JOIN population p                 
+ON h.state = p.state                    
+GROUP BY p.region                      
+ORDER BY avg_hos;                       
 
 -- LEFT JOIN
 -- 6. Show all states from daily_stats and their hospital data — include states even if hospital data is missing.
