@@ -543,10 +543,64 @@ ON d.state = p.state;
 
 -- RIGHT JOIN
 -- 11. Show all hospital records and match daily stats where available.
+-- right join hospital with daily_stats (hospital at the right)
+
+SELECT d.date,
+d.state, 
+d.deathIncrease,
+d.positiveIncrease,
+d.hospitalizedCurrently,
+h.hospitalized,
+h.inIcuCurrently,
+h.onVentilatorCurrently
+FROM daily_stats d
+RIGHT JOIN hospital_data h
+ON d.state = h.state
+AND d.date = h.date;
+
 -- 12. Find dates that exist in hospital_data but not in daily_stats.
+-- hospital_data on the right:
+SELECT h.date
+FROM daily_stats d
+RIGHT JOIN hospital_data h
+ON d.date = h.date
+WHERE d.state = 0 OR d.state IS NULL;
+
 -- 13. Show all states from the states table even if they never reported deaths.
+-- population at the right, daily_stats deathIncrease
+SELECT DISTINCT p.state, 
+SUM(d.deathIncrease) AS sum_death
+FROM daily_stats d
+RIGHT JOIN population p
+ON d.state = p.state
+GROUP BY p.state
+ORDER BY sum_death DESC;
+
 -- 14. Which states have population data but zero daily stats records?
+-- population data on the right
+DESCRIBE daily_stats;
+DESCRIBE hospital_data;
+
+SELECT DISTINCT p.state,
+d.date,
+d.deathIncrease,
+d.positiveIncrease,
+d.hospitalizedCurrently
+FROM daily_stats d
+RIGHT JOIN population p
+ON d.state = p.state
+WHERE d.deathIncrease = 0 OR 
+d.positiveIncrease = 0 OR 
+d.hospitalizedCurrently = 0;
+
 -- 15. Show all ICU data with matching death data — keep ICU rows even without death data.
+-- icu (hospital_data) at the right, death data (daily_stats)
+SELECT d.deathIncrease,
+h.inIcuCurrently
+FROM daily_stats d
+RIGHT JOIN hospital_data h
+ON d.state = h.state
+ORDER BY d.deathIncrease DESC;
 
 -- SELF JOIN
 -- 16. Find dates where CA had higher positiveIncrease than NY on the same day.
