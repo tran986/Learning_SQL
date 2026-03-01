@@ -190,7 +190,14 @@ GROUP BY state
 ORDER BY death_sum_per_day DESC;
 
 -- Find the first date each state reported a death.
+DESCRIBE abd_results.covid;
 
+SELECT MIN(date) AS first_date,
+state,
+COUNT(death) AS count_death -- When you use GROUP BY, SQL collapses multiple rows into one row per group. For every column you SELECT, SQL needs to know: "Which single value should I show for this group?
+FROM abd_results.covid
+GROUP BY state
+ORDER BY first_date;
 
 -- Which states had a second wave (hospitalizations dropped then rose again above the first peak)?
 -- Show the top 3 deadliest months for each state.
@@ -604,9 +611,64 @@ ORDER BY d.deathIncrease DESC;
 
 -- SELF JOIN
 -- 16. Find dates where CA had higher positiveIncrease than NY on the same day.
+DESCRIBE daily_stats;
+
+CREATE TEMPORARY TABLE temp_daily_stats AS -- might use this moving forward for selfjoin, just 
+SELECT deathIncrease, date, state
+FROM daily_stats;
+
+SELECT 
+  a.deathIncrease AS death_increase_ca,
+  b.deathIncrease AS death_increase_ny,
+  a.date
+FROM temp_daily_stats a
+JOIN daily_stats b
+  ON a.date = b.date
+WHERE a.state = 'CA'
+  AND b.state = 'NY'
+  AND a.deathIncrease > b.deathIncrease
+ORDER BY a.date;
+
 -- 17. Find all states that had more deaths than CA on any given day.
+DESCRIBE temp_daily_stats; -- this will be a
+
+SELECT b.state,
+b.deathIncrease
+FROM daily_stats b
+JOIN temp_daily_stats a
+ON a.date = b.date
+WHERE a.state = "CA" AND
+a.deathIncrease < b.deathIncrease
+ORDER BY b.deathIncrease DESC;
+
 -- 18. Compare each state's hospitalizedCurrently to the national average on the same date.
+DESCRIBE hospital_data;
+SELECT * FROM temp_hospital;
+
+CREATE TEMPORARY TABLE temp_hospital AS 
+SELECT AVG(hospitalized) AS nation_avg_hospitalized, date
+FROM abd_results.covid
+GROUP BY date;
+
+CREATE TEMPORARY TABLE avg_state AS
+SELECT MAX(date) AS max_day,
+AVG(hospitalized) AS avg_hos_state,
+state
+FROM hospital_data
+GROUP BY state
+ORDER BY avg_hos_state;
+
+SELECT 
+a.max_day,
+a.state,
+a.avg_hos_state,
+b.nation_avg_hospitalized
+FROM avg_state a
+JOIN temp_hospital b
+ON a.max_day = b.date;
+
 -- 19. Find days where a state's deathIncrease was higher than the previous day.
+
 -- 20. Which states always had fewer ICU patients than their total hospitalized on every single day?
 
 
