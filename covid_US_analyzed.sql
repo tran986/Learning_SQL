@@ -670,6 +670,38 @@ ON a.max_day = b.date;
 -- 19. Find days where a state's deathIncrease was higher than the previous day.
 
 -- 20. Which states always had fewer ICU patients than their total hospitalized on every single day?
+-- step 1: group by state, find total hospitalized on every single day?
+CREATE TEMPORARY TABLE hospital_info AS
+SELECT state,
+SUM(hospitalized) AS total_hos,
+date
+FROM hospital_data
+GROUP BY state, date;
+
+-- step 2: group by state, find total ICU patients on every single day?
+CREATE TEMPORARY TABLE icu_info AS
+SELECT state,
+date,
+SUM(inIcuCurrently) AS total_icu
+FROM hospital_data
+GROUP BY state, date;
+
+
+-- step 3: merge 2 pieces of info:
+SELECT * FROM icu_info;
+SELECT * FROM hospital_info;
+
+SELECT i.total_icu,
+i.date,
+h.total_hos,
+i.state
+FROM icu_info i
+JOIN hospital_info h
+ON i.state = h.state AND
+i.date = h.date
+WHERE i.total_icu < h.total_hos;
+
+
 
 
 
