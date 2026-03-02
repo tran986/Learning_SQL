@@ -701,6 +701,177 @@ ON i.state = h.state AND
 i.date = h.date
 WHERE i.total_icu < h.total_hos;
 
+-- ============================================
+-- UNION (removes duplicates)
+-- ============================================
+
+-- 1. Show all unique states from both daily_stats and hospital_data combined.
+
+-- 2. Show states from daily_stats where totalTestResultsIncrease > 10000
+--    UNION states from hospital_data where inIcuCurrently > 500.
+
+-- 3. Create a combined list of dates from daily_stats and hospital_data with no duplicates.
+
+-- 4. Show states with total deathIncrease > 5000 from daily_stats
+--    UNION states with peak inIcuCurrently > 1000 from hospital_data.
+
+-- 5. UNION daily_stats and hospital_data — show only state and date from both tables.
+
+-- ============================================
+-- UNION ALL (keeps duplicates)
+-- ============================================
+
+-- 6. Show all states from both daily_stats and hospital_data including duplicates.
+--    How many more rows does UNION ALL return vs UNION?
+
+-- 7. Combine deathIncrease from daily_stats and hospitalizedIncrease from hospital_data
+--    into one column called "daily_increase" using UNION ALL.
+
+-- 8. Stack all CA rows from daily_stats on top of all CA rows from hospital_data using UNION ALL.
+
+-- 9. Use UNION ALL to count total records across both daily_stats and hospital_data combined.
+
+-- 10. What is the difference in row count between
+--     UNION and UNION ALL on daily_stats + hospital_data?
+
+-- ============================================
+-- HAVING
+-- ============================================
+
+-- 11. Find states where average deathIncrease was more than 30 per day.
+
+-- 12. Which states reported more than 300 days of data?
+
+-- 13. Find regions where total positiveIncrease exceeded 2,000,000.
+--     Hint: JOIN states + daily_stats, GROUP BY region, HAVING SUM
+
+-- 14. Which states had MAX inIcuCurrently above 2000?
+
+-- 15. Find states where SUM(deathIncrease) was more than 3x their SUM(hospitalizedIncrease).
+
+-- ============================================
+-- EXISTS
+-- ============================================
+
+-- 16. Find all states in daily_stats that also exist in hospital_data.
+--     Hint: SELECT state FROM daily_stats WHERE EXISTS (SELECT 1 FROM hospital_data WHERE...)
+
+-- 17. Find states in daily_stats where there EXISTS at least one day with deathIncrease > 500.
+
+-- 18. Find all dates in daily_stats where there EXISTS a matching record in hospital_data
+--     with inIcuCurrently > 1000.
+
+-- 19. Find states in the states table that EXISTS in daily_stats with total deaths > 10000.
+
+-- 20. Find states where EXISTS a day with both positiveIncrease > 5000
+--     AND deathIncrease > 100 on the same date.
+
+-- ============================================
+-- ANY / ALL
+-- ============================================
+
+-- 21. Find states where deathIncrease was greater than ANY single day in California.
+--     (greater than CA's minimum daily death)
+
+-- 22. Find states where average deathIncrease was greater than ALL states in the Northeast.
+--     Hint: AVG(deathIncrease) > ALL (SELECT AVG... WHERE region = 'Northeast')
+
+-- 23. Find dates where NY's positiveIncrease was greater than ANY day recorded by FL.
+
+-- 24. Find states where MAX(hospitalizedIncrease) is less than ALL values recorded by TX.
+
+-- 25. Find states where every single day's deathIncrease was greater than ALL days in Alaska (AK).
+
+-- ============================================
+-- INSERT INTO SELECT / SELECT INTO
+-- ============================================
+
+-- 26. Create a new table called "south_states_stats" containing all daily_stats
+--     for Southern states only.
+--     Hint: CREATE TABLE south_states_stats AS SELECT ... JOIN ... WHERE region = 'South'
+
+-- 27. Insert into a new table "high_death_days" all rows from daily_stats
+--     where deathIncrease > 500.
+
+-- 28. Create a summary table called "state_summary" with columns:
+--     state, total_deaths, avg_daily_deaths, peak_deaths, total_positive.
+--     Hint: CREATE TABLE state_summary AS SELECT ... GROUP BY state
+
+-- 29. Create a new table "icu_peaks" containing each state and their peak inIcuCurrently date.
+--     Hint: use the subquery + JOIN pattern we practiced earlier
+
+-- 30. Insert into a new table "monthly_summary" the total deathIncrease and
+--     positiveIncrease per state per month.
+--     Hint: CREATE TABLE monthly_summary AS SELECT state, LEFT(date,7)... GROUP BY state, month
+
+-- ============================================
+-- UNION + JOINS
+-- ============================================
+
+-- 1. Show a combined list of states and their total deathIncrease from daily_stats
+--    UNION states and their peak inIcuCurrently from hospital_data.
+--    Only include Southern states.
+--    Hint: two separate SELECT + JOIN with states table, UNION them together
+
+-- 2. LEFT JOIN daily_stats and hospital_data, then UNION the result with
+--    a RIGHT JOIN of the same tables.
+--    What is the difference in row count?
+
+-- ============================================
+-- HAVING + JOINS
+-- ============================================
+
+-- 3. JOIN daily_stats and states table, GROUP BY region,
+--    find regions where AVG(deathIncrease) > 20
+--    AND total positiveIncrease > 1,000,000.
+--    Hint: two conditions in HAVING with AND
+
+-- 4. JOIN all 3 tables (daily_stats, hospital_data, states),
+--    GROUP BY state, HAVING MAX(inIcuCurrently) > 1000
+--    AND SUM(deathIncrease) > 5000.
+
+-- ============================================
+-- EXISTS + JOINS
+-- ============================================
+
+-- 5. Find all states from the states table WHERE EXISTS
+--    a record in daily_stats with deathIncrease > 200
+--    AND the state is in the South region.
+--    Hint: JOIN inside the EXISTS subquery
+
+-- 6. Find all dates in daily_stats WHERE EXISTS a matching row
+--    in hospital_data (same state AND date) with inIcuCurrently > 500
+--    AND the state is in the Northeast region.
+--    Hint: EXISTS subquery + JOIN states table
+
+-- ============================================
+-- ANY / ALL + JOINS
+-- ============================================
+
+-- 7. JOIN daily_stats and states table, find states where
+--    SUM(deathIncrease) > ANY (SELECT SUM(deathIncrease) 
+--    FROM daily_stats JOIN states WHERE region = 'West' GROUP BY state).
+--    Which states had more total deaths than at least one Western state?
+
+-- 8. JOIN daily_stats and states, find states where
+--    AVG(deathIncrease) > ALL (SELECT AVG(deathIncrease)
+--    FROM daily_stats JOIN states WHERE region = 'Northeast' GROUP BY state).
+--    Which states beat every single Northeast state in avg daily deaths?
+
+-- ============================================
+-- INSERT INTO SELECT + JOINS
+-- ============================================
+
+-- 9. Create a new table "region_summary" by joining daily_stats and states,
+--    GROUP BY region containing:
+--    region, total_deaths, avg_daily_deaths, peak_single_day_deaths, total_positive.
+--    Hint: CREATE TABLE region_summary AS SELECT ... JOIN ... GROUP BY region
+
+-- 10. Create a new table "full_summary" by joining ALL 3 tables
+--     (daily_stats, hospital_data, states) containing:
+--     state, region, total_deaths, peak_icu, avg_hospitalized, total_positive
+--     only for states where total_deaths > 10000.
+--     Hint: JOIN all 3 tables + GROUP BY state, region + HAVING SUM(deathIncrease) > 10000
 
 
 
