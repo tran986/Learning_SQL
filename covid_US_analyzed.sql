@@ -704,13 +704,40 @@ WHERE i.total_icu < h.total_hos;
 -- ============================================
 -- UNION (removes duplicates)
 -- ============================================
-
 -- 1. Show all unique states from both daily_stats and hospital_data combined.
+SELECT state FROM daily_stats
+UNION 
+SELECT state from hospital_data;
 
 -- 2. Show states from daily_stats where totalTestResultsIncrease > 10000
+SELECT * FROM daily_stats;
+DESCRIBE abd_results.covid;
+
+SELECT state, SUM(positiveIncrease) AS total_res_increase
+FROM abd_results.covid
+GROUP BY state
+UNION
+SELECT state, SUM(positiveIncrease) AS total_res_increase 
+FROM daily_stats 
+GROUP BY state
+HAVING total_res_increase > 1000
+ORDER BY total_res_increase DESC; -- number of columns of 2 tables before UNION have to be the same
+ 
 --    UNION states from hospital_data where inIcuCurrently > 500.
+SELECT * FROM hospital_data;
+
+SELECT state, SUM(inIcuCurrently) AS sum_icu
+FROM hospital_data
+GROUP BY state
+UNION
+SELECT state, SUM(inIcuCurrently) AS sum_icu
+FROM abd_results.covid
+GROUP BY state 
+HAVING sum_icu > 500;
 
 -- 3. Create a combined list of dates from daily_stats and hospital_data with no duplicates.
+
+
 
 -- 4. Show states with total deathIncrease > 5000 from daily_stats
 --    UNION states with peak inIcuCurrently > 1000 from hospital_data.
