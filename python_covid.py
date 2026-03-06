@@ -126,6 +126,32 @@ national_daily["date"] = pd.to_datetime(national_daily["date"])
 national_daily=national_daily.set_index("date")
 monthly=national_daily["deathIncrease"].resample("ME").sum().reset_index()
 
+print(national_daily.head(5))
+print(monthly.head(5))
 #Compute the month-over-month absolute change and % change.
+national_daily["mom_change"]=national_daily["deathIncrease"].diff()
+national_daily["mom_pct"]=national_daily["deathIncrease"].pct_change()
+national_daily.rename(columns = {"deathIncrease":"total_deaths"})
 #Display as a clean table with columns: month, total_deaths, mom_change, mom_pct.
+national_daily=national_daily.dropna(how = "any",
+                            axis = 0)
 
+#print(national_daily.columns)
+
+## Q13. For each state, find the peak (maximum) value of hospitalizedCurrently.
+#Rank states 1–N (1 = highest). Add the date on which the peak occurred.
+#Display the top 10 states with columns: state, peak_hosp, peak_date, rank.
+q13_covid=covid_db.dropna(subset=["hospitalizedCurrently"])
+q13_covid_rank=q13_covid.groupby("state")["hospitalizedCurrently"].idxmax().head(10).tolist()
+q13_fin=covid_db.iloc[q13_covid_rank][["state","hospitalizedCurrently","date"]]
+q13_fin=q13_fin.rename(columns={"hospitalizedCurrently":"peak_hos",
+                        "date":"peak_date"})
+q13_fin=q13_fin.sort_values(by="peak_hos", ascending = False)
+q13_fin["rank"]=q13_fin["peak_hos"].rank(ascending = False)
+print(q13_fin.head(5))
+
+## Q14. Create a pivot table where:
+#rows = state
+#columns = month (Jan 2020 … Mar 2021)
+#values = sum of positiveIncrease
+#Fill missing values with 0. Show only states where total > 500,000 cases.
