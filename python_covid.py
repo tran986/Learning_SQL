@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 
 covid_db = pd.read_csv("/Users/tran.986/Downloads/all-states-history.csv")
 
@@ -192,8 +193,38 @@ print(median_icu.head(5))
 covid_db=covid_db.fillna(0, inplace = True) #fix NA
 print(median_icu.tail(5))
 
-## Q17. icu_rate = inIcuCurrently / hospitalizedCurrently * 100
-#For each state, compute the median ICU rate over all available dates.
-#Identify the 5 states with the highest and lowest median ICU rates.
-#Exclude states with fewer than 30 non-null data points for inIcuCurrently.
+## Q17. Plot the national daily new cases (sum of positiveIncrease across all states) over time.
+national_new_case=covid_db.groupby("date")["positiveIncrease"].sum().reset_index()
+print(national_new_case.head(5))
+national_new_case["date"]=pd.to_datetime(national_new_case["date"]) #convert to daytime:
+national_new_case["7_day_rolling"]=covid_db.groupby("date")["positiveIncrease"].rolling(window = 7).mean().reset_index(level=0, drop=True)
 
+plt.figure(figsize=(14, 6))
+plt.plot(national_new_case["date"], 
+         national_new_case["positiveIncrease"], 
+         color = "red", 
+         linewidth=1.5)
+plt.plot(national_new_case["date"],
+            national_new_case["7_day_rolling"], 
+            color='blue', 
+            linestyle='--', 
+            linewidth=1, 
+            label='axvline (behind)', 
+            zorder=0)
+line_position=national_new_case[national_new_case["date"] == pd.Timestamp("2021-01-01")]
+plt.vlines(line_position["date"], 
+           ymin=1, 
+           ymax=national_new_case["positiveIncrease"].max(),
+           colors='purple', 
+           linestyles='solid')
+plt.title("National Daily New Cases Over Time")
+plt.xlabel("Date")
+plt.ylabel("New Case")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+plt.savefig('/Users/tran.986/Desktop/Learning_SQL/national_daily_case_overtime.png', dpi=150, bbox_inches="tight") 
+
+#Overlay a 7-day rolling average line.
+#Label axes and add a title. Use a vertical line to mark 2021-01-01.
+#Save as "q17_national_cases.png" at 150 dpi.
