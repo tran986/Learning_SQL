@@ -148,10 +148,40 @@ q13_fin=q13_fin.rename(columns={"hospitalizedCurrently":"peak_hos",
                         "date":"peak_date"})
 q13_fin=q13_fin.sort_values(by="peak_hos", ascending = False)
 q13_fin["rank"]=q13_fin["peak_hos"].rank(ascending = False)
-print(q13_fin.head(5))
 
 ## Q14. Create a pivot table where:
 #rows = state
 #columns = month (Jan 2020 … Mar 2021)
 #values = sum of positiveIncrease
 #Fill missing values with 0. Show only states where total > 500,000 cases.
+#print(covid_db.columns)
+covid_db["date"]=pd.to_datetime(covid_db["date"])
+covid_db["month"]=covid_db["date"].dt.to_period("M")
+pivot_covid=pd.pivot_table(covid_db, values="positiveIncrease", index=["state"], 
+                     columns=["month"], aggfunc=np.sum)
+pivot_covid=pivot_covid.fillna(0)
+pivot_covid=pivot_covid.loc[(pivot_covid > 500000).any(axis=1), :]
+print(pivot_covid.head(5))
+print(pivot_covid.columns)
+
+## Q15. Compute the Case Fatality Rate per state as:
+#CFR = (max cumulative death / max cumulative positive) * 100
+#Exclude states where max positive < 10,000 (too small for meaningful CFR).
+#Display top 10 and bottom 10 states by CFR. 
+print(covid_db.columns)
+max_death = covid_db.groupby("state")["deathIncrease"].max()
+max_pos = covid_db.groupby("state")["positiveIncrease"].max()
+cfr=(max_death / max_pos) * 100
+cfr_merge=pd.concat([cfr, max_death, max_pos], axis = 1)
+cfr_merge.rename(columns = {cfr_merge.columns[0]:"cfr"},
+                 inplace = True)
+cfr_merge_clean=cfr_merge.fillna(0)
+cfr_merge_clean=cfr_merge_clean[cfr_merge_clean.iloc[:, ] >= 10000]
+print(cfr_merge_clean.head(5))
+
+## Q16. Compute daily ICU occupancy as:
+#icu_rate = inIcuCurrently / hospitalizedCurrently * 100
+#For each state, compute the median ICU rate over all available dates.
+#Identify the 5 states with the highest and lowest median ICU rates.
+#Exclude states with fewer than 30 non-null data points for inIcuCurrently.
+
