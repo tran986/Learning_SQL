@@ -177,10 +177,22 @@ cfr_merge.rename(columns = {cfr_merge.columns[0]:"cfr"},
                  inplace = True)
 cfr_merge_clean=cfr_merge.fillna(0)
 cfr_merge_clean=cfr_merge_clean[cfr_merge_clean.iloc[:, ] >= 10000]
-print(cfr_merge_clean.head(5))
 
 ## Q16. Compute daily ICU occupancy as:
 #icu_rate = inIcuCurrently / hospitalizedCurrently * 100
+#For each state, compute the median ICU rate over all available dates.
+#Identify the 5 states with the highest and lowest median ICU rates.
+#Exclude states with fewer than 30 non-null data points for inIcuCurrently.
+icu_cal = lambda x, y: x/y*100
+covid_db["icu_rate"]=icu_cal(covid_db["inIcuCurrently"], 
+        covid_db["hospitalizedCurrently"])
+median_icu=covid_db.groupby("state")["icu_rate"].median().reset_index()
+median_icu=median_icu.sort_values(by="icu_rate", ascending = False)
+print(median_icu.head(5))
+covid_db=covid_db.fillna(0, inplace = True) #fix NA
+print(median_icu.tail(5))
+
+## Q17. icu_rate = inIcuCurrently / hospitalizedCurrently * 100
 #For each state, compute the median ICU rate over all available dates.
 #Identify the 5 states with the highest and lowest median ICU rates.
 #Exclude states with fewer than 30 non-null data points for inIcuCurrently.
