@@ -194,6 +194,9 @@ covid_db=covid_db.fillna(0, inplace = True) #fix NA
 print(median_icu.tail(5))
 
 ## Q17. Plot the national daily new cases (sum of positiveIncrease across all states) over time.
+#Overlay a 7-day rolling average line.
+#Label axes and add a title. Use a vertical line to mark 2021-01-01.
+#Save as "q17_national_cases.png" at 150 dpi.
 national_new_case=covid_db.groupby("date")["positiveIncrease"].sum().reset_index()
 print(national_new_case.head(5))
 national_new_case["date"]=pd.to_datetime(national_new_case["date"]) #convert to daytime:
@@ -223,8 +226,28 @@ plt.ylabel("New Case")
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
-plt.savefig('/Users/tran.986/Desktop/Learning_SQL/national_daily_case_overtime.png', dpi=150, bbox_inches="tight") 
+#plt.savefig('/Users/tran.986/Desktop/Learning_SQL/national_daily_case_overtime.png', dpi=150, bbox_inches="tight") 
 
-#Overlay a 7-day rolling average line.
-#Label axes and add a title. Use a vertical line to mark 2021-01-01.
-#Save as "q17_national_cases.png" at 150 dpi.
+## Q18. Plot cumulative positive cases over time for these 6 states on one figure:
+#CA, TX, NY
+#Use a different colour per state. Add a legend.
+#X-axis: date, Y-axis: cumulative positive cases (in millions).
+
+q18=covid_db[["date","positiveIncrease","state"]]
+q18=q18[q18["state"].isin(["CA","TX", "NY", "PA", "OH", "FL", "IL"])]
+q18["positiveIncrease_millions"]=q18["positiveIncrease"]/1000000
+q18_per_state=q18.groupby(["state","date"])["positiveIncrease_millions"].sum().reset_index()
+q18_per_state["date"]=pd.to_datetime(q18_per_state["date"])
+plt.figure(figsize=(14, 6))
+for state, group in q18_per_state.groupby("state"):
+    plt.plot(group["date"], group["positiveIncrease_millions"], linewidth=1, label=state)
+
+plt.title("Positive Case Over Time CA, TX, NY, PA, OH, FL, IL")
+plt.legend(bbox_to_anchor=(1.01, 1), loc="upper left", fontsize=7, ncol=2)
+plt.xlabel("Date")
+plt.ylabel("Case (millions)")
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+plt.savefig('/Users/tran.986/Desktop/Learning_SQL/positive_overtime_some_states.png', dpi=150, bbox_inches="tight") 
+
