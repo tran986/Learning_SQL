@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 covid_db = pd.read_csv("/Users/tran.986/Downloads/all-states-history.csv")
 
@@ -249,5 +250,23 @@ plt.ylabel("Case (millions)")
 plt.xticks(rotation=45)
 plt.tight_layout()
 plt.show()
-plt.savefig('/Users/tran.986/Desktop/Learning_SQL/positive_overtime_some_states.png', dpi=150, bbox_inches="tight") 
+#plt.savefig('/Users/tran.986/Desktop/Learning_SQL/positive_overtime_some_states.png', dpi=150, bbox_inches="tight") 
 
+## Q19. Create a heatmap showing weekly total new cases for the top 20 states by total cases.
+#Rows = state, Columns = week (ISO week number)
+#Use a sequential colour map (e.g., YlOrRd). Annotate axis labels clearly.
+covid_db["week_iso"]=covid_db["date"].dt.isocalendar().week
+print(covid_db[["week_iso","positiveIncrease", "state"]])
+q19=covid_db.groupby("state")["positiveIncrease"].sum().reset_index()
+top20_state=q19.sort_values(by = "positiveIncrease", ascending = False).head(20)["state"]
+q19_pivot=pd.pivot_table(covid_db, values = "positiveIncrease", index=["state"],
+                         columns=["week_iso"], aggfunc=np.sum)
+print(q19_pivot.head(5)) #filter only top20_state in q19_pivot
+q19_pivot = q19_pivot[q19_pivot.index.isin(top20_state)]
+plt.figure(figsize=(8, 6))
+sns.heatmap(q19_pivot.corr(), annot=False, cmap='YlOrRd', fmt='.2f') 
+plt.title("positive cases heatmap for the top 20 states")
+plt.xlabel("Week ISO")
+plt.ylabel("Week ISO")
+plt.show()
+plt.savefig('/Users/tran.986/Desktop/Learning_SQL/heatmap_case_top20_state.png', dpi=150, bbox_inches="tight") 
