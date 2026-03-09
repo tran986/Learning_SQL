@@ -269,4 +269,30 @@ plt.title("positive cases heatmap for the top 20 states")
 plt.xlabel("Week ISO")
 plt.ylabel("Week ISO")
 plt.show()
-plt.savefig('/Users/tran.986/Desktop/Learning_SQL/heatmap_case_top20_state.png', dpi=150, bbox_inches="tight") 
+#plt.savefig('/Users/tran.986/Desktop/Learning_SQL/heatmap_case_top20_state.png', dpi=150, bbox_inches="tight") 
+
+## Q20. For the national daily data, investigate the lag between new cases and new deaths.
+#Compute the correlation between deathIncrease and positiveIncrease shifted by 0, 7, 14, 21 days.
+#Plot correlation vs. lag days as a bar chart.
+#Which lag gives the highest correlation?
+national_daily_pos=covid_db.groupby("date")["positiveIncrease"].sum().reset_index()
+national_daily_pos["date"] = pd.to_datetime(national_daily_pos["date"])
+national_daily_pos=national_daily_pos.set_index("date")
+death_v_increase=national_daily_pos.join(national_daily, how='outer')
+#death_v_increase[["date", "positiveIncrease", "deathIncrease"]].replace([np.na, -np.na], np.nan, inplace = True)
+
+## Q21. For the national 7-day rolling average of new cases:
+#  1. Define a "surge" as any period where the 7d average > 50,000/day
+#  2. Identify contiguous surge periods (start date, end date, peak value, peak date)
+#  3. Plot the rolling average, shade each surge period in red
+#  4. Print a summary table of all identified surges
+covid_db["new_case"]=covid_db["positiveIncrease"].rolling(window = 7).mean()
+print(covid_db.head(5))
+surge=covid_db[covid_db["new_case"] > 50000]
+
+
+
+# Q22. Test whether the distribution of daily deathIncrease values (across all states & dates)
+#is normally distributed using the Shapiro-Wilk test.
+#Also test the log-transformed values (log1p).
+#Print the test statistic and p-value for both. What do you conclude?
