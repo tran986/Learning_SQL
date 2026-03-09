@@ -736,13 +736,32 @@ GROUP BY state
 HAVING sum_icu > 500;
 
 -- 3. Create a combined list of dates from daily_stats and hospital_data with no duplicates.
-
-
+SELECT date FROM hospital_data
+UNION 
+SELECT date
+FROM daily_stats;
 
 -- 4. Show states with total deathIncrease > 5000 from daily_stats
 --    UNION states with peak inIcuCurrently > 1000 from hospital_data.
+SELECT * FROM daily_stats;
+SELECT * FROM hospital_data;
+
+SELECT state
+FROM daily_stats
+GROUP BY state
+HAVING SUM(deathIncrease) > 5000
+UNION 
+SELECT state
+FROM hospital_data
+GROUP BY state
+HAVING MAX(inIcuCurrently) > 1000;
 
 -- 5. UNION daily_stats and hospital_data — show only state and date from both tables.
+SELECT state, date
+FROM daily_stats
+UNION
+SELECT state, date
+FROM hospital_data;
 
 -- ============================================
 -- UNION ALL (keeps duplicates)
@@ -750,31 +769,94 @@ HAVING sum_icu > 500;
 
 -- 6. Show all states from both daily_stats and hospital_data including duplicates.
 --    How many more rows does UNION ALL return vs UNION?
+CREATE TEMPORARY TABLE union_all_state AS
+SELECT state FROM daily_stats
+UNION ALL 
+SELECT state FROM hospital_data;
+
+CREATE TEMPORARY TABLE union_state AS
+SELECT state FROM daily_stats
+UNION 
+SELECT state FROM hospital_data;
+
+SELECT COUNT(*) FROM union_all_state;
+SELECT COUNT(*) FROM union_state;
+
+DROP TABLE union_all_state;
+DROP TABLE union_state;
 
 -- 7. Combine deathIncrease from daily_stats and hospitalizedIncrease from hospital_data
 --    into one column called "daily_increase" using UNION ALL.
 
+SELECT deathIncrease AS daily_increase
+FROM daily_stats
+UNION ALL
+SELECT hospitalized AS daily_increase 
+FROM hospital_data
+ORDER BY daily_increase DESC;
+
 -- 8. Stack all CA rows from daily_stats on top of all CA rows from hospital_data using UNION ALL.
+SELECT state 
+FROM daily_stats WHERE state = "CA"
+UNION ALL 
+SELECT state
+FROM hospital_data WHERE state = "CA";
 
 -- 9. Use UNION ALL to count total records across both daily_stats and hospital_data combined.
+CREATE TEMPORARY TABLE total_record AS
+SELECT state, date 
+FROM daily_stats
+UNION ALL
+SELECT state, date
+FROM hospital_data;
 
--- 10. What is the difference in row count between
---     UNION and UNION ALL on daily_stats + hospital_data?
+SELECT COUNT(*) FROM total_record; -- 39716
+DROP TABLE total_record;
 
 -- ============================================
 -- HAVING
 -- ============================================
 
 -- 11. Find states where average deathIncrease was more than 30 per day.
+SELECT state, AVG(deathIncrease) AS avg_death, date
+FROM abd_results.covid
+GROUP BY state, date
+HAVING avg_death > 30;
 
 -- 12. Which states reported more than 300 days of data?
+SELECT state, COUNT(date) AS date_count
+FROM abd_results.covid
+GROUP BY state
+HAVING date_count > 300; -- 22 states
 
 -- 13. Find regions where total positiveIncrease exceeded 2,000,000.
---     Hint: JOIN states + daily_stats, GROUP BY region, HAVING SUM
+SELECT * FROM population;
+SELECT * FROM daily_stats;
 
+SELECT SUM(d.positiveIncrease) AS total_increase,
+p.region
+FROM daily_stats d
+LEFT JOIN population p
+ON d.state = p.state
+GROUP BY p.region
+HAVING total_increase > 200000;
+
+--     Hint: JOIN states + daily_stats, GROUP BY region, HAVING SUM
 -- 14. Which states had MAX inIcuCurrently above 2000?
+SELECT * FROM hospital_data;
+SELECT state, MAX(inIcuCurrently) as max_icu
+FROM hospital_data
+GROUP BY state
+HAVING max_icu > 900
+ORDER BY max_icu DESC;
 
 -- 15. Find states where SUM(deathIncrease) was more than 3x their SUM(hospitalizedIncrease).
+SELECT state,
+SUM(deathIncrease) AS sum_death,
+SUM(hospitalizedIncrease) AS sum_hos
+FROM abd_results.covid
+GROUP BY state
+HAVING sum_death > 3*sum_hos;
 
 -- ============================================
 -- EXISTS
@@ -782,8 +864,23 @@ HAVING sum_icu > 500;
 
 -- 16. Find all states in daily_stats that also exist in hospital_data.
 --     Hint: SELECT state FROM daily_stats WHERE EXISTS (SELECT 1 FROM hospital_data WHERE...)
+SELECT state
+FROM daily_stats
+WHERE EXISTS (
+  SELECT state
+  FROM hospital_data
+  WHERE daily_stats.state = hospital_data.state
+);
 
 -- 17. Find states in daily_stats where there EXISTS at least one day with deathIncrease > 500.
+SELECT DISTINCT state
+FROM daily_stats
+WHERE EXISTS (
+  SELECT state,
+  deathIncrease
+  FROM abd_results.covid
+  WHERE daily_stats.state = abd_results.covid.state AND daily_stats.deathIncrease > 500
+)
 
 -- 18. Find all dates in daily_stats where there EXISTS a matching record in hospital_data
 --     with inIcuCurrently > 1000.
