@@ -880,15 +880,59 @@ WHERE EXISTS (
   deathIncrease
   FROM abd_results.covid
   WHERE daily_stats.state = abd_results.covid.state AND daily_stats.deathIncrease > 500
-)
+);
+
+-- another way to do it using JOIN:
+SELECT DISTINCT d.state,
+a.deathIncrease
+FROM daily_stats d
+LEFT JOIN abd_results.covid a
+ON d.state = a.state
+WHERE a.deathIncrease > 0;
 
 -- 18. Find all dates in daily_stats where there EXISTS a matching record in hospital_data
 --     with inIcuCurrently > 1000.
+SELECT DISTINCT date
+FROM daily_stats
+WHERE EXISTS (
+  SELECT date, inIcuCurrently
+  FROM hospital_data 
+  WHERE daily_stats.date = hospital_data.date AND hospital_data.inIcuCurrently > 2000
+);
+
+-- another way to do it using join:
+SELECT DISTINCT d.date, 
+h.inIcuCurrently
+FROM daily_stats d
+LEFT JOIN hospital_data h
+ON d.date = h.date
+WHERE h.inIcuCurrently > 2000
+ORDER BY h.inIcuCurrently DESC;
 
 -- 19. Find states in the states table that EXISTS in daily_stats with total deaths > 10000.
+SELECT * FROM abd_results.covid;
+
+SELECT DISTINCT state
+FROM daily_stats
+WHERE EXISTS (
+  SELECT SUM(death) as sum_death
+  FROM abd_results.covid
+  GROUP BY state
+  HAVING sum_death > 10000
+);
+
+-- using join:
+SELECT d.state,
+SUM(a.death) AS sum_death
+FROM daily_stats d
+LEFT JOIN abd_results.covid a
+ON d.state = a.state
+GROUP BY d.state
+HAVING sum_death >10000;
 
 -- 20. Find states where EXISTS a day with both positiveIncrease > 5000
 --     AND deathIncrease > 100 on the same date.
+SELECT * FROM hospital_data;
 
 -- ============================================
 -- ANY / ALL
