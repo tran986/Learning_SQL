@@ -932,23 +932,87 @@ HAVING sum_death >10000;
 
 -- 20. Find states where EXISTS a day with both positiveIncrease > 5000
 --     AND deathIncrease > 100 on the same date.
-SELECT * FROM hospital_data;
+
+SELECT DISTINCT state
+FROM hospital_data
+WHERE EXISTS (
+ SELECT date
+ FROM daily_stats
+ WHERE daily_stats.positiveIncrease > 100 AND positiveIncrease > 5000
+);
+
+-- using join:
+SELECT DISTINCT d.state
+FROM daily_stats d
+RIGHT JOIN  hospital_data h
+ON d.state = h.state
+WHERE d.positiveIncrease > 100 AND d.positiveIncrease > 5000;
 
 -- ============================================
 -- ANY / ALL
 -- ============================================
-
 -- 21. Find states where deathIncrease was greater than ANY single day in California.
 --     (greater than CA's minimum daily death)
 
+SELECT DISTINCT state
+FROM abd_results.covid
+WHERE deathIncrease > ANY (
+  SELECT MIN(deathIncrease)
+  FROM daily_stats
+  WHERE state = "CA"
+  GROUP BY date
+);
+
 -- 22. Find states where average deathIncrease was greater than ALL states in the Northeast.
 --     Hint: AVG(deathIncrease) > ALL (SELECT AVG... WHERE region = 'Northeast')
+SELECT state, AVG(deathIncrease)
+FROM abd_results.covid
+GROUP BY state
+HAVING AVG(deathIncrease) > ALL (
+  SELECT AVG(a.deathIncrease) 
+  FROM population p
+  INNER JOIN abd_results.covid a
+  ON p.state = a.state
+  WHERE p.region = "Northeast"
+  GROUP BY p.state
+);
 
 -- 23. Find dates where NY's positiveIncrease was greater than ANY day recorded by FL.
+SELECT positiveIncrease, date
+FROM abd_results.covid 
+WHERE state = "NY" AND 
+positiveIncrease > ANY (
+  SELECT SUM(positiveIncrease)
+  FROM daily_stats
+  WHERE state = "FL"
+  GROUP BY date);
 
 -- 24. Find states where MAX(hospitalizedIncrease) is less than ALL values recorded by TX.
 
+SELECT state,
+MAX(hospitalizedIncrease)
+FROM abd_results.covid
+GROUP BY state 
+HAVING MAX(hospitalizedIncrease) < ALL (
+SELECT hospitalizedIncrease
+FROM abd_results.covid
+WHERE state = "TX"
+);
+
 -- 25. Find states where every single day's deathIncrease was greater than ALL days in Alaska (AK).
+SELECT * FROM daily_stats;
+SELECT * FROM abd_results.covid;
+SELECT * FROM population;
+
+SELECT DISTINCT state
+FROM abd_results.covid
+WHERE state != "AK"
+GROUP BY state
+HAVING MIN(deathIncrease) > ALL(
+SELECT MAX(deathIncrease)
+FROM abd_results.covid
+WHERE state = "AK"
+GROUP BY date);
 
 -- ============================================
 -- INSERT INTO SELECT / SELECT INTO
@@ -1040,6 +1104,278 @@ SELECT * FROM hospital_data;
 --     state, region, total_deaths, peak_icu, avg_hospitalized, total_positive
 --     only for states where total_deaths > 10000.
 --     Hint: JOIN all 3 tables + GROUP BY state, region + HAVING SUM(deathIncrease) > 10000
+
+-- =============================================================
+-- 50 Intermediate SQL Questions
+-- Dataset: all-states-history (COVID-19 US States)
+-- Table name assumed: covid_history
+-- Columns: date, state, death, deathConfirmed, deathIncrease,
+--   deathProbable, hospitalized, hospitalizedCumulative,
+--   hospitalizedCurrently, hospitalizedIncrease, inIcuCumulative,
+--   inIcuCurrently, negative, negativeIncrease, onVentilatorCumulative,
+--   onVentilatorCurrently, positive, positiveCasesViral,
+--   positiveIncrease, recovered, totalTestResults,
+--   totalTestResultsIncrease, totalTestsViral, ... (and more)
+-- =============================================================
+
+
+-- =============================================================
+-- AGGREGATION
+-- =============================================================
+
+-- 1. Find the total number of deaths (death column) for each state,
+--    ordered from highest to lowest.
+
+
+-- 2. How many records exist for each state in the dataset?
+--    List only states that have more than 300 records.
+
+
+-- 3. What is the maximum number of hospitalized patients currently
+--    (hospitalizedCurrently) recorded for each state?
+
+
+-- 4. Calculate the average daily positive increase (positiveIncrease)
+--    per state, and return only states where the average exceeds 1000.
+
+
+-- 5. Find the 5 states with the highest total cumulative positive cases.
+
+
+-- =============================================================
+-- FILTERING (WHERE, IN, BETWEEN, LIMIT)
+-- =============================================================
+
+-- 6. Return all rows where hospitalizedCurrently is greater than 5000
+--    and the state is in ('CA', 'TX', 'FL', 'NY').
+
+
+-- 7. Find all records where deathIncrease is negative (data corrections).
+--    How many such records exist per state?
+
+
+-- 8. List all distinct dates where at least one state reported more than
+--    10,000 new positive cases in a single day.
+
+
+-- 9. Return records from January 2021 only, sorted by positiveIncrease
+--    descending.
+
+
+-- 10. Find states where the recovered column is NULL across all their
+--     records (i.e. no recovery data was ever reported).
+
+
+-- =============================================================
+-- WINDOW FUNCTIONS
+-- =============================================================
+
+-- 11. Using a window function, calculate the 7-day rolling average of
+--     positiveIncrease for California (CA).
+
+
+-- 12. Rank all states by their total death count using RANK().
+--     Show the top 10.
+
+
+-- 13. For each state, calculate the cumulative sum of positiveIncrease
+--     ordered by date.
+
+
+-- 14. Using LAG(), find the previous day's positiveIncrease for each
+--     state and compute the day-over-day change.
+
+
+-- 15. Using LEAD(), identify records where the next day's deathIncrease
+--     was more than double the current day's value.
+
+
+-- 16. For each state, find the date when it recorded its highest
+--     single-day positive increase using ROW_NUMBER().
+
+
+-- 17. Calculate a 3-day rolling sum of deathIncrease for New York (NY).
+
+
+-- 18. Using NTILE(4), divide each state's daily records into quartiles
+--     based on positiveIncrease, and count how many days fall in each
+--     quartile per state.
+
+
+-- 19. Using FIRST_VALUE() and LAST_VALUE(), find each state's first and
+--     last recorded hospitalizedCurrently value.
+
+
+-- 20. Find the date each state crossed 100,000 cumulative positive cases
+--     for the first time.
+
+
+-- =============================================================
+-- DATE FUNCTIONS (DATEDIFF, EXTRACT, DATE_FORMAT, WEEK, DAYOFWEEK)
+-- =============================================================
+
+-- 21. Calculate the number of days between the first and last recorded
+--     date for each state.
+
+
+-- 22. Find all records where the date falls on a weekend
+--     (Saturday or Sunday).
+--     Hint: DAYOFWEEK() returns 1=Sunday, 7=Saturday in MySQL.
+
+
+-- 23. For each state, calculate the number of days since their last
+--     reported deathIncrease greater than 0
+--     (measured from the overall max date in the dataset).
+
+
+-- 24. Group records by month and year, and return the total
+--     positiveIncrease nationwide per month.
+
+
+-- 25. Find the week number and year for each record, and aggregate
+--     total deaths nationwide by week.
+
+
+-- =============================================================
+-- SUBQUERIES
+-- =============================================================
+
+-- 26. Which state had the highest hospitalizedCurrently value on the
+--     single worst day nationally (the day with the highest total
+--     hospitalizations across all states)?
+
+
+-- 27. Find all states where the average positiveIncrease is above
+--     the overall national average positiveIncrease.
+
+
+-- 28. Return the top 3 days with the highest deathIncrease for each
+--     state.
+
+
+-- 29. Find states that never reported a day with zero positiveIncrease
+--     (i.e. always had at least 1 new case every day).
+
+
+-- 30. Using a subquery, find the date and state of the single record
+--     with the maximum onVentilatorCurrently value.
+
+
+-- =============================================================
+-- CTEs (Common Table Expressions)
+-- =============================================================
+
+-- 31. Use a CTE to calculate cumulative deaths per state, then select
+--     only states where cumulative deaths exceeded 20,000.
+
+
+-- 32. Using a CTE, compute the 7-day rolling average of positiveIncrease
+--     for each state-date pair, then find the date when this average
+--     peaked for each state.
+
+
+-- 33. Create a CTE that flags each record as 'surge'
+--     (positiveIncrease > 5000) or 'normal'. Then count surge vs normal
+--     days per state.
+
+
+-- 34. Using CTEs, calculate the 3-day moving sum of deathIncrease
+--     nationwide (aggregated across all states per day first).
+
+
+-- 35. Write a CTE that finds the first date each state had a
+--     hospitalizedCurrently value above 1000, then list them in
+--     ascending order of that date.
+
+
+-- =============================================================
+-- SELF-JOINS
+-- =============================================================
+
+-- 36. Perform a self-join to compare each state's positiveIncrease on
+--     a given date with the same state's value exactly 7 days prior.
+--     Hint: use DATE_ADD or INTERVAL in MySQL.
+
+
+-- 37. Use a self-join to find all cases where a state's positiveIncrease
+--     on one day was at least double its value the day before.
+
+
+-- =============================================================
+-- CASE WHEN
+-- =============================================================
+
+-- 38. Using CASE WHEN, classify each record's hospitalizedCurrently into
+--     'low' (< 500), 'medium' (500–2000), or 'high' (> 2000).
+--     Count each category per state.
+
+
+-- 39. Using CASE WHEN and LAG(), create a column that labels each day's
+--     deathIncrease as 'increasing', 'decreasing', or 'no change'
+--     compared to the previous day.
+
+
+-- =============================================================
+-- NULL HANDLING (COALESCE, NULLIF, IS NULL, COUNT vs COUNT(*))
+-- =============================================================
+
+-- 40. Return each state's total recovered using COALESCE(recovered, 0)
+--     and compare it to their total deaths side by side.
+
+
+-- 41. Find states where inIcuCurrently is NULL for more than 50% of
+--     their records.
+
+
+-- 42. Using NULLIF, calculate the positivity rate
+--     (positive / totalTestResults * 100) per state per day,
+--     avoiding division by zero.
+
+
+-- =============================================================
+-- RANKING (RANK, DENSE_RANK, PERCENT_RANK, NTILE)
+-- =============================================================
+
+-- 43. Using DENSE_RANK(), rank each state by their peak single-day
+--     positiveIncrease. List the top 5 unique ranks.
+
+
+-- 44. Find the state that recovered the fastest from its peak
+--     hospitalizedCurrently value — measured as the fewest days from
+--     peak to dropping to half that peak value.
+
+
+-- 45. Using PERCENT_RANK(), find which percentile each day's
+--     deathIncrease falls in per state, and return all days in the
+--     top 5 percentile.
+
+
+-- =============================================================
+-- MIXED / ADVANCED
+-- =============================================================
+
+-- 46. Using GROUP BY WITH ROLLUP, produce a summary showing total
+--     positiveIncrease by state and a grand total row.
+
+
+-- 47. Find states where the ratio of deathConfirmed to death is below
+--     70% (many probable deaths unconfirmed). Exclude states with
+--     fewer than 100 non-null death records.
+
+
+-- 48. Using a window function and CTE, compute the cumulative total
+--     test results (totalTestResults) per state, and find the first
+--     date each state surpassed 1 million total tests.
+
+
+-- 49. Find the 3 consecutive dates with the highest combined
+--     positiveIncrease nationwide, using a 3-day rolling window.
+
+
+-- 50. Build a full summary report: for each state show total positive
+--     cases, total deaths, case fatality rate (deaths / positive),
+--     peak single-day cases, and whether their peak occurred before
+--     or after 2021-01-01.
 
 
 
