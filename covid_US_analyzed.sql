@@ -1000,9 +1000,6 @@ WHERE state = "TX"
 );
 
 -- 25. Find states where every single day's deathIncrease was greater than ALL days in Alaska (AK).
-SELECT * FROM daily_stats;
-SELECT * FROM abd_results.covid;
-SELECT * FROM population;
 
 SELECT DISTINCT state
 FROM abd_results.covid
@@ -1017,24 +1014,67 @@ GROUP BY date);
 -- ============================================
 -- INSERT INTO SELECT / SELECT INTO
 -- ============================================
-
 -- 26. Create a new table called "south_states_stats" containing all daily_stats
 --     for Southern states only.
 --     Hint: CREATE TABLE south_states_stats AS SELECT ... JOIN ... WHERE region = 'South'
+CREATE TABLE south_states_stats AS
+SELECT d.* 
+FROM daily_stats d
+LEFT JOIN population p
+ON d.state = p.state
+WHERE p.region = "South";
+
+DROP TABLE south_states_stats;
 
 -- 27. Insert into a new table "high_death_days" all rows from daily_stats
 --     where deathIncrease > 500.
+CREATE TABLE high_death_days AS
+SELECT *
+FROM daily_stats
+WHERE deathIncrease > 500; 
+
+DROP TABLE high_death_days;
 
 -- 28. Create a summary table called "state_summary" with columns:
 --     state, total_deaths, avg_daily_deaths, peak_deaths, total_positive.
 --     Hint: CREATE TABLE state_summary AS SELECT ... GROUP BY state
 
+CREATE TABLE state_summary AS
+SELECT state,
+MAX(death) AS peak_death,
+SUM(death) AS total_deaths,
+SUM(positive) AS total_positive,
+AVG(death) AS avg_daily_deaths
+FROM abd_results.covid
+GROUP BY state;
+
+SELECT * FROM state_summary;
+DROP TABLE state_summary;
+
 -- 29. Create a new table "icu_peaks" containing each state and their peak inIcuCurrently date.
 --     Hint: use the subquery + JOIN pattern we practiced earlier
+-- find max_icu --> merge to their date --> make a new table out of it:
+CREATE TABLE icu_peaks AS 
+SELECT a.date,
+i.max_icu,
+i.state
+FROM abd_results.covid a
+RIGHT JOIN (
+SELECT state, 
+MAX(inIcuCurrently) AS max_icu
+FROM abd_results.covid
+GROUP BY state
+HAVING max(inIcuCurrently) != 0
+) i
+ON a.inIcuCurrently = i.max_icu;
+
+DROP TABLE icu_peaks;
 
 -- 30. Insert into a new table "monthly_summary" the total deathIncrease and
 --     positiveIncrease per state per month.
 --     Hint: CREATE TABLE monthly_summary AS SELECT state, LEFT(date,7)... GROUP BY state, month
+
+
 
 -- ============================================
 -- UNION + JOINS
