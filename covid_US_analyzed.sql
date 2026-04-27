@@ -332,7 +332,7 @@ HAVING SUM(deathConfirmed IS NULL) = 0 AND
        
 -- split the dataset into 3 different datasets:
 -- df 1: test-related
-CREATE TEMPORARY TABLE daily_stats AS
+CREATE TABLE daily_stats AS
 SELECT
 date,
 state, 
@@ -343,7 +343,7 @@ FROM abd_results.covid;
 
 
 -- df 2: hospital-data
-CREATE TEMPORARY TABLE hospital_data AS
+CREATE TABLE hospital_data AS
 SELECT
 date,
 state,
@@ -1092,10 +1092,6 @@ DROP TABLE monthly_summary;
 --    UNION states and their peak inIcuCurrently from hospital_data.
 --    Only include Southern states.
 --    Hint: two separate SELECT + JOIN with states table, UNION them together
-SELECT * FROM daily_stats;
-SELECT * FROM abd_results.covid;
-SELECT * FROM population;
-
 
 -- Option 2:Alternative to union: LOL
 SELECT p.state,
@@ -1118,13 +1114,32 @@ WHERE p.region = "South";
 --    find regions where AVG(deathIncrease) > 20
 --    AND total positiveIncrease > 1,000,000.
 --    Hint: two conditions in HAVING with AND
-
-
-
+SELECT
+p.region,
+AVG(d.deathIncrease) AS avg_death,
+SUM(d.positiveIncrease) AS sum_pos
+FROM daily_stats d
+LEFT JOIN population p
+ON d.state = p.state
+GROUP BY p.region
+HAVING avg_death > 20 AND sum_pos > 1000000;
 
 -- 4. JOIN all 3 tables (daily_stats, hospital_data, states),
 --    GROUP BY state, HAVING MAX(inIcuCurrently) > 1000
 --    AND SUM(deathIncrease) > 5000.
+SELECT * FROM daily_stats;
+SELECT * FROM hospital_data;
+SELECT * FROM population;
+
+SELECT MAX(h.inIcuCurrently) AS max_icu,
+SUM(d.deathIncrease) AS sum_death
+FROM hospital_data h
+INNER JOIN daily_stats d
+ON h.state = d.state
+GROUP BY d.state
+HAVING max_icu > 1000 AND
+sum_death > 5000;
+
 
 -- ============================================
 -- EXISTS + JOINS
