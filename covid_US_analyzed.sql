@@ -671,7 +671,7 @@ ON a.max_day = b.date;
 
 -- 20. Which states always had fewer ICU patients than their total hospitalized on every single day?
 -- step 1: group by state, find total hospitalized on every single day?
-CREATE TEMPORARY TABLE hospital_info AS
+CREATE TABLE hospital_info AS
 SELECT state,
 SUM(hospitalized) AS total_hos,
 date
@@ -1074,7 +1074,15 @@ DROP TABLE icu_peaks;
 --     positiveIncrease per state per month.
 --     Hint: CREATE TABLE monthly_summary AS SELECT state, LEFT(date,7)... GROUP BY state, month
 
+CREATE TABLE monthly_summary AS
+SELECT state,
+LEFT(date,7) AS month,
+SUM(deathIncrease) AS total_death,
+SUM(positiveIncrease) AS total_pos
+FROM daily_stats
+GROUP BY month, state;
 
+DROP TABLE monthly_summary;
 
 -- ============================================
 -- UNION + JOINS
@@ -1084,10 +1092,23 @@ DROP TABLE icu_peaks;
 --    UNION states and their peak inIcuCurrently from hospital_data.
 --    Only include Southern states.
 --    Hint: two separate SELECT + JOIN with states table, UNION them together
+SELECT * FROM daily_stats;
+SELECT * FROM abd_results.covid;
+SELECT * FROM population;
 
--- 2. LEFT JOIN daily_stats and hospital_data, then UNION the result with
---    a RIGHT JOIN of the same tables.
---    What is the difference in row count?
+
+-- Option 2:Alternative to union: LOL
+SELECT p.state,
+a.total_death,
+a.max_icu
+FROM population p
+RIGHT JOIN (SELECT state,
+SUM(deathIncrease) AS total_death,
+MAX(inIcuCurrently) AS max_icu
+FROM abd_results.covid 
+GROUP BY state) a
+ON a.state = p.state
+WHERE p.region = "South";
 
 -- ============================================
 -- HAVING + JOINS
@@ -1097,6 +1118,9 @@ DROP TABLE icu_peaks;
 --    find regions where AVG(deathIncrease) > 20
 --    AND total positiveIncrease > 1,000,000.
 --    Hint: two conditions in HAVING with AND
+
+
+
 
 -- 4. JOIN all 3 tables (daily_stats, hospital_data, states),
 --    GROUP BY state, HAVING MAX(inIcuCurrently) > 1000
