@@ -1127,9 +1127,6 @@ HAVING avg_death > 20 AND sum_pos > 1000000;
 -- 4. JOIN all 3 tables (daily_stats, hospital_data, states),
 --    GROUP BY state, HAVING MAX(inIcuCurrently) > 1000
 --    AND SUM(deathIncrease) > 5000.
-SELECT * FROM daily_stats;
-SELECT * FROM hospital_data;
-SELECT * FROM population;
 
 SELECT MAX(h.inIcuCurrently) AS max_icu,
 SUM(d.deathIncrease) AS sum_death
@@ -1150,10 +1147,26 @@ sum_death > 5000;
 --    AND the state is in the South region.
 --    Hint: JOIN inside the EXISTS subquery
 
+SELECT state
+FROM population
+WHERE EXISTS (
+  SELECT deathIncrease 
+  FROM daily_stats
+  WHERE deathIncrease >200
+) AND region = "South";
+
 -- 6. Find all dates in daily_stats WHERE EXISTS a matching row
 --    in hospital_data (same state AND date) with inIcuCurrently > 500
 --    AND the state is in the Northeast region.
 --    Hint: EXISTS subquery + JOIN states table
+
+SELECT * FROM daily_stats;
+SELECT * FROM hospital_data;
+SELECT * FROM population;
+
+SELECT date
+FROM hospital_data;
+
 
 -- ============================================
 -- ANY / ALL + JOINS
