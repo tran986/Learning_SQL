@@ -1160,12 +1160,15 @@ WHERE EXISTS (
 --    AND the state is in the Northeast region.
 --    Hint: EXISTS subquery + JOIN states table
 
-SELECT * FROM daily_stats;
-SELECT * FROM hospital_data;
-SELECT * FROM population;
-
-SELECT date
-FROM hospital_data;
+SELECT date, state
+FROM daily_stats
+WHERE EXISTS (
+  SELECT h.date, h.state
+  FROM hospital_data h
+  LEFT JOIN population p
+  ON h.state = p.state 
+  WHERE p.region = "Northeast"  
+);
 
 
 -- ============================================
@@ -1177,10 +1180,38 @@ FROM hospital_data;
 --    FROM daily_stats JOIN states WHERE region = 'West' GROUP BY state).
 --    Which states had more total deaths than at least one Western state?
 
+SELECT SUM(deathIncrease),
+state
+FROM daily_stats
+GROUP BY state
+HAVING SUM(deathIncrease) > ANY (
+SELECT
+SUM(d.deathIncrease) 
+FROM daily_stats d
+LEFT JOIN population p
+ON p.state = d.state
+WHERE p.region = "West"
+GROUP BY d.state
+);
+
 -- 8. JOIN daily_stats and states, find states where
 --    AVG(deathIncrease) > ALL (SELECT AVG(deathIncrease)
 --    FROM daily_stats JOIN states WHERE region = 'Northeast' GROUP BY state).
 --    Which states beat every single Northeast state in avg daily deaths?
+
+SELECT AVG(deathIncrease),
+state
+FROM daily_stats
+GROUP BY state
+HAVING AVG(deathIncrease) > ALL (
+SELECT 
+AVG(d.deathIncrease)
+FROM daily_stats d
+LEFT JOIN population p
+ON d.state = p.state
+WHERE p.region = "Northeast"
+GROUP BY d.state)
+;
 
 -- ============================================
 -- INSERT INTO SELECT + JOINS
@@ -1190,13 +1221,32 @@ FROM hospital_data;
 --    GROUP BY region containing:
 --    region, total_deaths, avg_daily_deaths, peak_single_day_deaths, total_positive.
 --    Hint: CREATE TABLE region_summary AS SELECT ... JOIN ... GROUP BY region
+CREATE TEMPORARY TABLE region_summary AS
+SELECT
+SUM(d.deathIncrease) AS total_deaths,
+SUM(d.positiveIncrease) AS total_positive,
+p.region,
+AVG(d.deathIncrease) AS avg_daily_death,
+MAX(d.deathIncrease) AS peak_single_day_deaths
+FROM daily_stats d
+LEFT JOIN population p
+ON p.state = d.state
+GROUP BY p.region;
 
 -- 10. Create a new table "full_summary" by joining ALL 3 tables
 --     (daily_stats, hospital_data, states) containing:
 --     state, region, total_deaths, peak_icu, avg_hospitalized, total_positive
 --     only for states where total_deaths > 10000.
---     Hint: JOIN all 3 tables + GROUP BY state, region + HAVING SUM(deathIncrease) > 10000
 
+SELECT * FROM daily_stats;
+SELECT * FROM hospital_data;
+SELECT * FROM population;
+
+
+
+
+
+--     Hint: JOIN all 3 tables + GROUP BY state, region + HAVING SUM(deathIncrease) > 10000
 -- =============================================================
 -- 50 Intermediate SQL Questions
 -- Dataset: all-states-history (COVID-19 US States)
