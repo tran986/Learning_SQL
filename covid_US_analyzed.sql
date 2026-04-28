@@ -1170,7 +1170,6 @@ WHERE EXISTS (
   WHERE p.region = "Northeast"  
 );
 
-
 -- ============================================
 -- ANY / ALL + JOINS
 -- ============================================
@@ -1238,13 +1237,17 @@ GROUP BY p.region;
 --     state, region, total_deaths, peak_icu, avg_hospitalized, total_positive
 --     only for states where total_deaths > 10000.
 
-SELECT * FROM daily_stats;
-SELECT * FROM hospital_data;
-SELECT * FROM population;
-
-
-
-
+SELECT d.state,
+SUM(d.deathIncrease) AS total_death,
+AVG(d.hospitalizedCurrently) AS avg_hospitalized,
+SUM(d.positiveIncrease) AS total_positive,
+MAX(h.inIcuCurrently) AS peak_icu,
+p.region
+FROM daily_stats d
+JOIN hospital_data h ON d.state = h.state AND d.date = h.date
+JOIN population p ON d.state = p.state
+GROUP BY d.state
+HAVING total_death > 10000;
 
 --     Hint: JOIN all 3 tables + GROUP BY state, region + HAVING SUM(deathIncrease) > 10000
 -- =============================================================
@@ -1268,13 +1271,25 @@ SELECT * FROM population;
 -- 1. Find the total number of deaths (death column) for each state,
 --    ordered from highest to lowest.
 
+SELECT state,
+SUM(death)
+FROM abd_results.covid
+GROUP BY state
+ORDER BY SUM(death) DESC;
 
 -- 2. How many records exist for each state in the dataset?
 --    List only states that have more than 300 records.
 
+SELECT state, COUNT(date)
+FROM abd_results.covid
+GROUP BY state;
 
 -- 3. What is the maximum number of hospitalized patients currently
 --    (hospitalizedCurrently) recorded for each state?
+SELECT * FROM daily_stats;
+SELECT * FROM hospital_data;
+SELECT * FROM population;
+SELECT * FROM abd_results.covid;
 
 
 -- 4. Calculate the average daily positive increase (positiveIncrease)
