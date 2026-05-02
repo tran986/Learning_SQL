@@ -1263,7 +1263,6 @@ HAVING total_death > 10000;
 --   totalTestResultsIncrease, totalTestsViral, ... (and more)
 -- =============================================================
 
-
 -- =============================================================
 -- AGGREGATION
 -- =============================================================
@@ -1294,10 +1293,19 @@ SELECT * FROM abd_results.covid;
 
 -- 4. Calculate the average daily positive increase (positiveIncrease)
 --    per state, and return only states where the average exceeds 1000.
-
+SELECT AVG(positiveIncrease) AS daily_pos,
+state
+FROM abd_results.covid
+GROUP BY state
+HAVING daily_pos > 1000;
 
 -- 5. Find the 5 states with the highest total cumulative positive cases.
-
+SELECT SUM(positiveIncrease) AS cumulative,
+state
+FROM abd_results.covid
+GROUP BY state
+ORDER BY cumulative DESC
+LIMIT 5;
 
 -- =============================================================
 -- FILTERING (WHERE, IN, BETWEEN, LIMIT)
@@ -1305,23 +1313,46 @@ SELECT * FROM abd_results.covid;
 
 -- 6. Return all rows where hospitalizedCurrently is greater than 5000
 --    and the state is in ('CA', 'TX', 'FL', 'NY').
-
+SELECT hospitalizedCurrently, state
+FROM abd_results.covid
+WHERE state IN ('CA', 'TX', 'FL', 'NY');
 
 -- 7. Find all records where deathIncrease is negative (data corrections).
 --    How many such records exist per state?
-
+SELECT COUNT(x.deathIncrease),
+x.state
+FROM (
+SELECT deathIncrease,
+state
+FROM abd_results.covid 
+WHERE deathIncrease < 0
+) x
+GROUP BY x.state;
 
 -- 8. List all distinct dates where at least one state reported more than
---    10,000 new positive cases in a single day.
+--    10,000 new positive cases in a single day. 
 
+SELECT DISTINCT date, 
+state,
+positiveIncrease
+FROM abd_results.covid 
+WHERE positiveIncrease > 10000;
 
 -- 9. Return records from January 2021 only, sorted by positiveIncrease
 --    descending.
 
+SELECT positiveIncrease, date
+FROM abd_results.covid
+WHERE date BETWEEN '2021-01-01' AND '2021-01-31';
 
 -- 10. Find states where the recovered column is NULL across all their
 --     records (i.e. no recovery data was ever reported).
+SELECT * FROM abd_results.covid;
 
+SELECT state
+FROM abd_results.covid
+GROUP BY state
+HAVING SUM(recovered IS NOT NULL) = 0;
 
 -- =============================================================
 -- WINDOW FUNCTIONS
