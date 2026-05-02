@@ -1360,7 +1360,12 @@ HAVING SUM(recovered IS NOT NULL) = 0;
 
 -- 11. Using a window function, calculate the 7-day rolling average of
 --     positiveIncrease for California (CA).
-
+SELECT date,
+AVG(positiveIncrease) OVER (
+  ORDER BY date
+  ROWS BETWEEN 6 PRECEDING AND CURRENT ROW 
+) AS rolling_avg
+FROM abd_results.covid;
 
 -- 12. Rank all states by their total death count using RANK().
 --     Show the top 10.
