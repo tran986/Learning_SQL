@@ -1369,19 +1369,46 @@ FROM abd_results.covid;
 
 -- 12. Rank all states by their total death count using RANK().
 --     Show the top 10.
+SELECT state,
+SUM(death)
+FROM abd_results.covid
+GROUP BY state
+ORDER BY SUM(death) DESC
+LIMIT 10;
 
+SELECT state,
+RANK() OVER (ORDER BY SUM(death)) AS rank_death
+FROM abd_results.covid
+GROUP BY state
+LIMIT 10;
 
 -- 13. For each state, calculate the cumulative sum of positiveIncrease
 --     ordered by date.
 
+SELECT state, date,
+SUM(positiveIncrease) OVER (
+  PARTITION BY state
+  ORDER BY date
+) AS sum_pos
+FROM abd_results.covid;
 
 -- 14. Using LAG(), find the previous day's positiveIncrease for each
 --     state and compute the day-over-day change.
 
+SELECT
+date,
+state,
+LAG(positiveIncrease) OVER (ORDER BY date) AS prev_pos,
+positiveIncrease - LAG(positiveIncrease) OVER (ORDER BY date) AS day_change-- this is day-over-day change?
+FROM abd_results.covid;
 
 -- 15. Using LEAD(), identify records where the next day's deathIncrease
 --     was more than double the current day's value.
-
+SELECT
+date,
+deathIncrease,
+LEAD(deathIncrease) OVER (ORDER BY date) AS next_day_death
+FROM abd_results.covid -- need a subquery for this 
 
 -- 16. For each state, find the date when it recorded its highest
 --     single-day positive increase using ROW_NUMBER().
