@@ -1404,22 +1404,40 @@ FROM abd_results.covid;
 
 -- 15. Using LEAD(), identify records where the next day's deathIncrease
 --     was more than double the current day's value.
-SELECT
-date,
+
+SELECT b.* 
+FROM (SELECT
+date, state,
 deathIncrease,
 LEAD(deathIncrease) OVER (ORDER BY date) AS next_day_death
-FROM abd_results.covid -- need a subquery for this 
+FROM abd_results.covid) b
+WHERE b.next_day_death > b.deathIncrease;
 
 -- 16. For each state, find the date when it recorded its highest
 --     single-day positive increase using ROW_NUMBER().
 
+SELECT state, date,
+positiveIncrease,
+ROW_NUMBER() OVER (
+PARTITION BY state
+ORDER BY positiveIncrease DESC
+) AS rank_pos
+FROM abd_results.covid;
 
 -- 17. Calculate a 3-day rolling sum of deathIncrease for New York (NY).
 
+SELECT date, state,
+SUM(deathIncrease) OVER (
+ORDER BY date
+ROWS BETWEEN 2 PRECEDING AND CURRENT ROW 
+) AS rolling_sum_death
+FROM abd_results.covid
+WHERE state = "NY";
 
 -- 18. Using NTILE(4), divide each state's daily records into quartiles
 --     based on positiveIncrease, and count how many days fall in each
 --     quartile per state.
+
 
 
 -- 19. Using FIRST_VALUE() and LAST_VALUE(), find each state's first and
