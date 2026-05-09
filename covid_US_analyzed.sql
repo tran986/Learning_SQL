@@ -1437,16 +1437,47 @@ WHERE state = "NY";
 -- 18. Using NTILE(4), divide each state's daily records into quartiles
 --     based on positiveIncrease, and count how many days fall in each
 --     quartile per state.
-
-
+SELECT q.state, COUNT(*) AS count, q.quartile_pos
+FROM (SELECT date, state,
+positiveIncrease,
+NTILE(4) OVER (ORDER BY positiveIncrease DESC) AS quartile_pos
+FROM abd_results.covid) q
+GROUP BY q.state, q.quartile_pos;
 
 -- 19. Using FIRST_VALUE() and LAST_VALUE(), find each state's first and
 --     last recorded hospitalizedCurrently value.
+SELECT state,
+FIRST_VALUE(hospitalizedCurrently) OVER (
+PARTITION BY state
+ORDER BY date ASC
+ROWS BETWEEN UNBOUNDED PRECEDING
+    AND UNBOUNDED FOLLOWING
+) AS first_hos_state,
+LAST_VALUE(hospitalizedCurrently) OVER (
+PARTITION BY state
+ORDER BY date ASC
+ROWS BETWEEN UNBOUNDED PRECEDING
+    AND UNBOUNDED FOLLOWING
+) AS last_hos_date
+FROM abd_results.covid;
 
 
--- 20. Find the date each state crossed 100,000 cumulative positive cases
+-- 20. Find the date each state crossed 10,000 cumulative positive cases
 --     for the first time.
-
+SELECT p.cumulative_pos, p.state,
+FIRST_VALUE(p.date) OVER (
+PARTITION by state
+ORDER BY date ASC
+ROWS BETWEEN UNBOUNDED PRECEDING
+    AND UNBOUNDED FOLLOWING
+) AS first_day
+FROM (
+SELECT date, state,
+SUM(positiveIncrease) AS cumulative_pos
+FROM abd_results.covid
+GROUP BY state, date
+HAVING cumulative_pos > 10000) p
+;
 
 -- =============================================================
 -- DATE FUNCTIONS (DATEDIFF, EXTRACT, DATE_FORMAT, WEEK, DAYOFWEEK)
