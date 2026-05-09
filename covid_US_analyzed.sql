@@ -1486,24 +1486,49 @@ HAVING cumulative_pos > 10000) p
 -- 21. Calculate the number of days between the first and last recorded
 --     date for each state.
 
+SELECT DATEDIFF(MAX(date), MIN(date)) AS num_day, state
+FROM abd_results.covid
+GROUP BY state;
 
 -- 22. Find all records where the date falls on a weekend
 --     (Saturday or Sunday).
 --     Hint: DAYOFWEEK() returns 1=Sunday, 7=Saturday in MySQL.
 
+SELECT DAYOFWEEK(date) AS date_of_week, date
+FROM abd_results.covid
+WHERE DAYOFWEEK(date) = 1 OR DAYOFWEEK(date) = 7;
 
 -- 23. For each state, calculate the number of days since their last
 --     reported deathIncrease greater than 0
 --     (measured from the overall max date in the dataset).
 
+SELECT p.state, 
+DATEDIFF((SELECT MAX(date) FROM abd_results.covid), MAX(date)) AS date_difference
+FROM (
+SELECT deathIncrease,
+state, date
+FROM abd_results.covid
+WHERE deathIncrease > 0) p
+GROUP BY p.state
+ORDER BY date_difference DESC;
 
 -- 24. Group records by month and year, and return the total
 --     positiveIncrease nationwide per month.
 
+SELECT EXTRACT(MONTH FROM date) AS month,
+EXTRACT(YEAR FROM date) AS year,
+SUM(positiveIncrease) AS sum_pos
+FROM abd_results.covid
+GROUP BY month, year;
+
 
 -- 25. Find the week number and year for each record, and aggregate
 --     total deaths nationwide by week.
-
+SELECT WEEK(date) as week,
+EXTRACT(YEAR FROM date) AS year,
+SUM(death) AS total_death
+FROM abd_results.covid
+GROUP BY week, year;
 
 -- =============================================================
 -- SUBQUERIES
@@ -1512,6 +1537,7 @@ HAVING cumulative_pos > 10000) p
 -- 26. Which state had the highest hospitalizedCurrently value on the
 --     single worst day nationally (the day with the highest total
 --     hospitalizations across all states)?
+
 
 
 -- 27. Find all states where the average positiveIncrease is above
