@@ -1538,15 +1538,34 @@ GROUP BY week, year;
 --     single worst day nationally (the day with the highest total
 --     hospitalizations across all states)?
 
-
+SELECT MAX(p.max_hos_state), p.state FROM 
+(SELECT MAX(hospitalizedCurrently) AS max_hos_state, state, date
+FROM abd_results.covid
+GROUP BY state, date) p
+GROUP BY p.state
+ORDER BY MAX(p.max_hos_state) DESC;
 
 -- 27. Find all states where the average positiveIncrease is above
 --     the overall national average positiveIncrease.
 
+SELECT AVG(positiveIncrease), state
+FROM abd_results.covid 
+GROUP BY state
+HAVING AVG(positiveIncrease) > (SELECT AVG(p.avg_per_state) FROM
+(SELECT AVG(positiveIncrease) AS avg_per_state
+FROM abd_results.covid
+GROUP BY state) p);
 
 -- 28. Return the top 3 days with the highest deathIncrease for each
 --     state.
 
+SELECT p.deathIncrease, p.state,  p.deathIncrease_order
+FROM (SELECT deathIncrease, state,
+ROW_NUMBER() OVER (PARTITION BY state
+ORDER BY deathIncrease DESC) AS deathIncrease_order
+FROM abd_results.covid) p
+WHERE p.deathIncrease_order < 4
+ORDER BY p.deathIncrease DESC;
 
 -- 29. Find states that never reported a day with zero positiveIncrease
 --     (i.e. always had at least 1 new case every day).
