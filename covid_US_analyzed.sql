@@ -1600,15 +1600,53 @@ LIMIT 2;
 -- 31. Use a CTE to calculate cumulative deaths per state, then select
 --     only states where cumulative deaths exceeded 20,000.
 
+WITH cumulativeDeath AS (
+SELECT SUM(deathIncrease) AS sum_death, state
+FROM abd_results.covid
+GROUP BY state
+)
+SELECT state FROM
+cumulativeDeath
+WHERE sum_death > 20000;
+
+-- shorter way:
+SELECT state,
+SUM(deathIncrease)
+FROM abd_results.covid
+GROUP BY state 
+HAVING SUM(deathIncrease) >20000;
 
 -- 32. Using a CTE, compute the 7-day rolling average of positiveIncrease
 --     for each state-date pair, then find the date when this average
 --     peaked for each state.
 
+WITH sev_day_rolling AS (
+SELECT state, date, AVG(positiveIncrease) OVER (
+PARTITION BY state
+ORDER BY date
+ROWS BETWEEN 6 PRECEDING AND CURRENT ROW 
+) AS pos_inc_sev_day
+FROM abd_results.covid)
+SELECT MAX(pos_inc_sev_day), state
+FROM sev_day_rolling
+GROUP BY state;
 
 -- 33. Create a CTE that flags each record as 'surge'
 --     (positiveIncrease > 5000) or 'normal'. Then count surge vs normal
 --     days per state.
+
+WITH surge_tbl AS
+(SELECT positiveIncrease,
+state, date
+FROM abd_results.covid
+WHERE positiveIncrease > 5000),
+normal_tbl AS
+(SELECT positiveIncrease,
+state,date
+FROM abd_results.covid
+WHERE positiveIncrease <= 5000)
+
+
 
 
 -- 34. Using CTEs, calculate the 3-day moving sum of deathIncrease
