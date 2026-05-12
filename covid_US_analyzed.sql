@@ -1569,11 +1569,29 @@ ORDER BY p.deathIncrease DESC;
 
 -- 29. Find states that never reported a day with zero positiveIncrease
 --     (i.e. always had at least 1 new case every day).
-
+SELECT DISTINCT p.state FROM 
+(SELECT positiveIncrease,
+date, state
+FROM abd_results.covid
+WHERE positiveIncrease > 0) p
+GROUP BY state;
 
 -- 30. Using a subquery, find the date and state of the single record
 --     with the maximum onVentilatorCurrently value.
 
+SELECT onVentilatorCurrently,
+state, date
+FROM abd_results.covid
+WHERE onVentilatorCurrently = (SELECT MAX(onVentilatorCurrently)
+FROM abd_results.covid);
+
+
+SELECT MAX(onVentilatorCurrently) AS max_vent_state_date, 
+date, state
+FROM abd_results.covid
+GROUP BY state,date
+ORDER BY max_vent_state_date DESC
+LIMIT 2;
 
 -- =============================================================
 -- CTEs (Common Table Expressions)
