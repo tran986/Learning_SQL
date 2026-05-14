@@ -1635,28 +1635,44 @@ GROUP BY state;
 --     (positiveIncrease > 5000) or 'normal'. Then count surge vs normal
 --     days per state.
 
-WITH surge_tbl AS
-(SELECT positiveIncrease,
-state, date
-FROM abd_results.covid
-WHERE positiveIncrease > 5000),
-normal_tbl AS
-(SELECT positiveIncrease,
-state,date
-FROM abd_results.covid
-WHERE positiveIncrease <= 5000)
+WITH flagged_tbl AS
+(SELECT 
+positiveIncrease,
+state, 
+date,
+CASE WHEN positiveIncrease > 5000 THEN "surge"
+ELSE "normal"
+END AS flag
+FROM abd_results.covid)
+SELECT COUNT(*) AS count, flag
+FROM flagged_tbl
+GROUP BY flag;
 
-
-
-
--- 34. Using CTEs, calculate the 3-day moving sum of deathIncrease
+-- 34. Using CTEs, calculate the 3-day rolling sum of deathIncrease
 --     nationwide (aggregated across all states per day first).
 
+WITH immediate_tbl AS
+(SELECT date, SUM(deathIncrease) AS sum_state_per_day
+FROM abd_results.covid
+GROUP BY date
+)
+SELECT date, SUM(sum_state_per_day) OVER (
+  ORDER BY date
+  ROWS BETWEEN 2 PRECEDING AND CURRENT ROW 
+) AS three_day_rolling_sum
+FROM immediate_tbl;
 
 -- 35. Write a CTE that finds the first date each state had a
 --     hospitalizedCurrently value above 1000, then list them in
 --     ascending order of that date.
 
+WITH host_tbl AS 
+(SELECT state, MIN(date) AS first_date
+FROM abd_results.covid
+WHERE hospitalizedCurrently > 1000
+GROUP BY state)
+SELECT * FROM host_tbl
+ORDER BY first_date;
 
 -- =============================================================
 -- SELF-JOINS
