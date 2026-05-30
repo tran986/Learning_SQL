@@ -1682,10 +1682,30 @@ ORDER BY first_date;
 --     a given date with the same state's value exactly 7 days prior.
 --     Hint: use DATE_ADD or INTERVAL in MySQL.
 
+SELECT a.positiveIncrease AS current_pos, 
+b.positiveIncrease AS prior_7day_pos, 
+a.date,
+a.positiveIncrease - b.positiveIncrease AS change_over_7_pos, 
+a.state
+FROM abd_results.covid a
+JOIN abd_results.covid b
+ON a.state = b.state
+AND b.date = DATE_ADD(a.date, INTERVAL -7 DAY);
+
 
 -- 37. Use a self-join to find all cases where a state's positiveIncrease
 --     on one day was at least double its value the day before.
 
+SELECT a.state,
+a.positiveIncrease AS pos_current,
+b.positiveIncrease*2 AS double_pos_before,
+a.date
+FROM abd_results.covid a
+JOIN abd_results.covid b
+ON a.state = b.state AND
+b.date = DATE_ADD(a.date, INTERVAL -1 DAY)
+HAVING pos_current >= double_pos_before
+ORDER BY pos_current DESC;
 
 -- =============================================================
 -- CASE WHEN
