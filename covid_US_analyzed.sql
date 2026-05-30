@@ -1715,11 +1715,27 @@ ORDER BY pos_current DESC;
 --     'low' (< 500), 'medium' (500–2000), or 'high' (> 2000).
 --     Count each category per state.
 
+SELECT state,
+CASE 
+   WHEN hospitalizedCurrently < 500 THEN "low"
+   WHEN hospitalizedCurrently >= 500 AND hospitalizedCurrently <= 2000 THEN "medium"
+   ELSE "high"
+END AS hospitalizd_category
+FROM abd_results.covid;
 
 -- 39. Using CASE WHEN and LAG(), create a column that labels each day's
 --     deathIncrease as 'increasing', 'decreasing', or 'no change'
 --     compared to the previous day.
 
+SELECT date,
+deathIncrease,
+LAG(deathIncrease) OVER (ORDER BY date) AS prev_death,
+CASE 
+  WHEN deathIncrease > LAG(deathIncrease) OVER (ORDER BY date) THEN "increasing"
+  WHEN deathIncrease < LAG(deathIncrease) OVER (ORDER BY date) THEN "decreasing"
+  ELSE "no_change"
+END AS compare_death
+FROM abd_results.covid;
 
 -- =============================================================
 -- NULL HANDLING (COALESCE, NULLIF, IS NULL, COUNT vs COUNT(*))
@@ -1783,6 +1799,89 @@ ORDER BY pos_current DESC;
 --     peak single-day cases, and whether their peak occurred before
 --     or after 2021-01-01.
 
+-- Self-Join Questions
 
+-- 1. Day-over-day change in positive cases
+-- For each state, show the positiveIncrease for the current date alongside
+-- the previous day's value. Flag any day where new cases more than doubled
+-- compared to the day before.
+
+-- 2. 7-day rolling comparison of deaths
+-- Using a self-join, retrieve each state's deathIncrease for a given date
+-- and compare it to the value exactly 7 days prior. Return only rows where
+-- deaths increased by more than 50%.
+
+-- 3. Hospitalization surge detection
+-- Join the table to itself to find all instances where hospitalizedCurrently
+-- on a given date was at least 2x the value from 14 days prior, for any state.
+
+-- 4. States that recovered faster than they spiked
+-- Self-join on state and a 30-day gap. Find states where positive cases grew
+-- by more than 10,000 in the first window but recovered grew by more than
+-- positive in the second window.
+
+-- 5. ICU pressure trend
+-- For each state, compare inIcuCurrently on the current date versus 3 days
+-- earlier. Return only states where the 3-day increase in ICU patients exceeds
+-- their 3-day increase in hospitalizedCurrently (ICU growing faster than
+-- overall hospitalizations).
+
+-- 6. Ventilator usage week-over-week
+-- Self-join to compare onVentilatorCurrently for each state on each date
+-- versus exactly 7 days prior. Return dates and states where ventilator
+-- usage dropped by more than 20%.
+
+
+-- Subquery Questions
+
+-- 7. States that never fell below their own average daily deaths
+-- Using a subquery to compute the average deathIncrease per state, return
+-- state-date pairs where the daily death count was always above that
+-- state's own average.
+
+-- 8. Worst single day per state
+-- For each state, use a subquery to find the date with the highest
+-- positiveIncrease. Return the state, that date, and the value.
+
+-- 9. States consistently above national average testing
+-- Compute the national average of totalTestResultsIncrease per day using
+-- a subquery, then return state-date pairs where the state exceeded that
+-- national average on more than 30 different days.
+
+-- 10. Top 5 states by peak ICU occupancy
+-- Use a subquery to find the maximum inIcuCurrently ever recorded per state,
+-- then return the top 5 states along with the date that peak occurred.
+
+
+-- Combined Self-Join + Subquery Questions
+
+-- 11. Second wave detection
+-- Using a self-join (30-day gap) and a subquery that identifies each state's
+-- peak positiveIncrease during the first half of the dataset, find states
+-- where the 30-days-later value exceeded the first-half peak, a proxy
+-- for a second wave.
+
+-- 12. States where deaths lagged cases by ~14 days
+-- Self-join on date offset by 14 days, then use a subquery to filter to only
+-- states where on days when positiveIncrease 14 days prior was in the top 25%
+-- for that state, deathIncrease today was also above that state's median.
+
+-- 13. Hospitalization outliers relative to state baseline
+-- Use a subquery to compute each state's average hospitalizedIncrease. Then
+-- self-join the table to find consecutive days where both today and yesterday
+-- were more than 2 standard deviations above that state's average.
+
+-- 14. Testing bottleneck identification
+-- Compute each state's average positive test rate (positiveIncrease /
+-- totalTestResultsIncrease) using a subquery. Self-join on a 7-day lag and
+-- return states and weeks where the positive rate jumped more than 10
+-- percentage points, suggesting a testing bottleneck rather than a true
+-- case surge.
+
+-- 15. Recovery milestone cross-reference
+-- Using a subquery to find the first date each state crossed 100,000
+-- cumulative positive cases, self-join the table to that milestone date
+-- and return hospitalizedCurrently, inIcuCurrently, and onVentilatorCurrently
+-- values exactly 21 days after that milestone.
 
 
