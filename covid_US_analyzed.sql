@@ -1802,16 +1802,10 @@ ORDER BY positivity_rate DESC;
 
 -- 43. Using DENSE_RANK(), rank each state by their peak single-day
 --     positiveIncrease. List the top 5 unique ranks.
-SELECT positiveIncrease,
-state,
-DENSE_RANK() OVER (ORDER BY positiveIncrease DESC) AS pos_dense_rank
-FROM abd_results.covid;
-
 -- find the peak single-day positiveIncrease then loop through them and rank:
 SELECT * FROM 
 (SELECT DENSE_RANK() OVER (ORDER BY a.peak_single_day_pos DESC) AS pos_dense_rank,
-a.peak_single_day_pos,
-a.state
+a.peak_single_day_pos, a.state
 FROM(SELECT MAX(positiveIncrease) AS peak_single_day_pos,
 state
 FROM abd_results.covid
@@ -1821,6 +1815,14 @@ WHERE x.pos_dense_rank < 6;
 -- 44. Find the state that recovered the fastest from its peak
 --     hospitalizedCurrently value — measured as the fewest days from
 --     peak to dropping to half that peak value.
+
+SELECT 0.5 * peak_hos AS half_peak_hos,
+a.peak_hos,
+a.state,
+a.date
+FROM (SELECT MAX(hospitalizedCurrently) AS peak_hos, state, date
+FROM abd_results.covid
+GROUP BY state, date) a;
 
 
 
