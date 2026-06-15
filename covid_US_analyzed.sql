@@ -1742,17 +1742,65 @@ FROM abd_results.covid;
 -- =============================================================
 
 -- 40. Return each state's total recovered using COALESCE(recovered, 0)
---     and compare it to their total deaths side by side.
+--     and compare it to their total deaths side by side
 
+SELECT a.state, 
+COALESCE(SUM(a.recovered), 0) AS recovered_fix,
+b.total_death
+FROM abd_results.covid a
+JOIN (
+SELECT state, SUM(death) AS total_death
+FROM abd_results.covid
+GROUP BY state) b
+ON a.state = b.state
+GROUP BY a.state;
 
--- 41. Find states where inIcuCurrently is NULL for more than 50% of
+-- 41. Find states where hospitalized is NULL for more than 50% of
 --     their records.
+SELECT COUNT(*) total_record, state
+FROM abd_results.covid
+GROUP BY state;
 
+SELECT state, 
+COUNT(hospitalized) AS null_count
+FROM abd_results.covid
+WHERE hospitalized IS NULL OR hospitalized = ""
+GROUP BY state;
+
+-- combine these 2 datasets:
+SELECT a.total_record, a.state, b.null_count
+FROM (SELECT COUNT(*) AS total_record,
+state
+FROM abd_results.covid
+GROUP BY state) a
+JOIN (SELECT state,
+COUNT(hospitalized) AS null_count
+FROM abd_results.covid
+WHERE hospitalized IS NULL OR hospitalized = ""
+GROUP BY state) b
+ON a.state = b.state
+HAVING b.null_count > 0.5 * a.total_record;
 
 -- 42. Using NULLIF, calculate the positivity rate
 --     (positive / totalTestResults * 100) per state per day,
 --     avoiding division by zero.
 
+-- nullif(exp1, exp2) returns null if exp1 = exp2, otherwise it returns the exp1.
+SELECT x.state,
+x.date,
+x.positive / x.non_0_totalTestResults * 100 AS positivity_rate 
+FROM (SELECT NULLIF(totalTestResults, 0) AS non_0_totalTestResults,
+state,
+date,
+positive
+FROM abd_results.covid) x
+GROUP BY x.state, x.date;
+
+SELECT NULLIF(totalTestResults, 0) AS non_0_totalTestResults,
+state,
+date,
+positive
+FROM abd_results.covid
 
 -- =============================================================
 -- RANKING (RANK, DENSE_RANK, PERCENT_RANK, NTILE)
