@@ -1808,18 +1808,20 @@ DENSE_RANK() OVER (ORDER BY positiveIncrease DESC) AS pos_dense_rank
 FROM abd_results.covid;
 
 -- find the peak single-day positiveIncrease then loop through them and rank:
-SELECT DENSE_RANK() OVER (ORDER BY a.peak_single_day_pos DESC) AS pos_dense_rank,
+SELECT * FROM 
+(SELECT DENSE_RANK() OVER (ORDER BY a.peak_single_day_pos DESC) AS pos_dense_rank,
 a.peak_single_day_pos,
 a.state
 FROM(SELECT MAX(positiveIncrease) AS peak_single_day_pos,
 state
 FROM abd_results.covid
-GROUP BY state) a
-HAVING pos_dense_rank < 5;
+GROUP BY state) a) x
+WHERE x.pos_dense_rank < 6;
 
 -- 44. Find the state that recovered the fastest from its peak
 --     hospitalizedCurrently value — measured as the fewest days from
 --     peak to dropping to half that peak value.
+
 
 
 -- 45. Using PERCENT_RANK(), find which percentile each day's
